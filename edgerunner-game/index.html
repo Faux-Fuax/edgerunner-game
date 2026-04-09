@@ -4,7 +4,7 @@
         <meta charset="UTF-8" />
         <meta
             name="viewport"
-            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
         />
         <title>EdgeRunner x 3399</title>
         <style>
@@ -20,6 +20,23 @@
                 background: #000;
                 overflow: hidden;
                 font-family: "Courier New", monospace;
+                /* Mobile viewport fix */
+                height: 100dvh;
+                height: -webkit-fill-available;
+                width: 100vw;
+                position: fixed;
+                top: 0;
+                left: 0;
+                /* Prevent pull-to-refresh and overscroll */
+                overscroll-behavior: none;
+                /* Better touch handling */
+                touch-action: none;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                user-select: none;
+                /* Prevent text size adjustment */
+                -webkit-text-size-adjust: 100%;
+                text-size-adjust: 100%;
             }
 
             /* Game canvas on top */
@@ -36,11 +53,13 @@
                 position: absolute;
                 top: 0;
                 left: 0;
-                width: 100%;
-                height: 100%;
+                width: 100vw;
+                height: 100dvh;
                 z-index: 0;
                 overflow: hidden;
                 background: #000;
+                /* Mobile fix */
+                min-height: -webkit-fill-available;
             }
 
             /* 3D Perspective container */
@@ -482,12 +501,13 @@
                 position: absolute;
                 top: 0;
                 left: 0;
-                width: 100%;
-                height: 100%;
+                width: 100vw;
+                height: 100dvh;
                 z-index: 5;
                 pointer-events: none;
                 opacity: 0.3;
                 mix-blend-mode: screen;
+                min-height: -webkit-fill-available;
             }
 
             /* Synthwave Sunset Background */
@@ -761,7 +781,6 @@
             }
         </style>
         <base target="_blank" />
-        <base target="_blank" />
     </head>
     <body>
         <!-- Synthwave + Digital Rain Background -->
@@ -968,6 +987,14 @@
         <script>
             const canvas = document.getElementById("gameCanvas");
             const ctx = canvas.getContext("2d");
+
+            // Mobile canvas setup with DPR scaling
+            function setupGameCanvas() {
+                const rect = canvas.getBoundingClientRect();
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                ctx.scale(dpr, dpr);
+            }
             const starfield = document.getElementById("starfield");
             const scoreEl = document.getElementById("score");
             const hub = document.getElementById("centralHub");
@@ -1188,13 +1215,7 @@
                 "music2.mp3",
                 "music3.mp3",
                 "music4.mp3",
-                "music5.mp3",
-                "music6.mp3",
-                "music7.mp3",
-                "music8.mp3",
             ];
-            // Track unlock levels: tracks 0-3 unlocked at start, 4-8 unlock at levels 2-6
-            const TRACK_UNLOCK_LEVELS = [1, 1, 1, 1, 2, 3, 4, 5, 6];
             let enabledTracks =
                 JSON.parse(localStorage.getItem("neonGapEnabledTracks")) ||
                 playlist.map(() => true);
@@ -1249,29 +1270,12 @@
             }
 
             function loadAndPlay(index, startTime = 0) {
-                // Check if track is unlocked
-                if (currentLevel < TRACK_UNLOCK_LEVELS[index]) {
-                    let nextIndex = (index + 1) % playlist.length;
-                    let attempts = 0;
-                    while (
-                        (currentLevel < TRACK_UNLOCK_LEVELS[nextIndex] ||
-                            !enabledTracks[nextIndex]) &&
-                        attempts < playlist.length
-                    ) {
-                        nextIndex = (nextIndex + 1) % playlist.length;
-                        attempts++;
-                    }
-                    if (attempts >= playlist.length) return; // No available tracks
-                    index = nextIndex;
-                }
-
                 // Skip disabled tracks
                 if (!enabledTracks[index]) {
                     let nextIndex = (index + 1) % playlist.length;
                     let attempts = 0;
                     while (
-                        (currentLevel < TRACK_UNLOCK_LEVELS[nextIndex] ||
-                            !enabledTracks[nextIndex]) &&
+                        !enabledTracks[nextIndex] &&
                         attempts < playlist.length
                     ) {
                         nextIndex = (nextIndex + 1) % playlist.length;
@@ -1288,13 +1292,9 @@
 
                 musicPlayer.onended = () => {
                     let next = (currentTrackIndex + 1) % playlist.length;
-                    // Skip to next enabled and unlocked track
+                    // Skip to next enabled track
                     let attempts = 0;
-                    while (
-                        (currentLevel < TRACK_UNLOCK_LEVELS[next] ||
-                            !enabledTracks[next]) &&
-                        attempts < playlist.length
-                    ) {
+                    while (!enabledTracks[next] && attempts < playlist.length) {
                         next = (next + 1) % playlist.length;
                         attempts++;
                     }
@@ -1307,98 +1307,35 @@
             const trackListDiv = document.getElementById("trackList");
             playlist.forEach((track, i) => {
                 const label = document.createElement("label");
-                const unlockLevel = TRACK_UNLOCK_LEVELS[i];
-                const isLocked = currentLevel < unlockLevel;
-                const lockText = isLocked ? ` 🔒 LVL ${unlockLevel}` : "";
-                const lockedStyle = isLocked
-                    ? "opacity: 0.5; cursor: not-allowed;"
-                    : "";
-
-                label.innerHTML = `<input type="checkbox" ${enabledTracks[i] ? "checked" : ""} data-index="${i}" ${isLocked ? "disabled" : ""}> Track ${i}${lockText}`;
-                label.style.cssText = lockedStyle;
+                label.innerHTML = `<input type="checkbox" ${enabledTracks[i] ? "checked" : ""} data-index="${i}"> Track ${i}`;
                 trackListDiv.appendChild(label);
-
-                if (!isLocked) {
-                    label
-                        .querySelector("input")
-                        .addEventListener("change", (e) => {
-                            enabledTracks[i] = e.target.checked;
-                            localStorage.setItem(
-                                "neonGapEnabledTracks",
-                                JSON.stringify(enabledTracks),
-                            );
-                            // If current track was disabled, skip to next
-                            if (
-                                !e.target.checked &&
-                                i === currentTrackIndex &&
-                                !musicPlayer.paused
-                            ) {
-                                let next = (i + 1) % playlist.length;
-                                let attempts = 0;
-                                while (
-                                    (currentLevel < TRACK_UNLOCK_LEVELS[next] ||
-                                        !enabledTracks[next]) &&
-                                    attempts < playlist.length
-                                ) {
-                                    next = (next + 1) % playlist.length;
-                                    attempts++;
-                                }
-                                if (attempts < playlist.length) {
-                                    loadAndPlay(next);
-                                }
-                            }
-                        });
-                }
-            });
-
-            function refreshTrackList() {
-                trackListDiv.innerHTML = "";
-                playlist.forEach((track, i) => {
-                    const label = document.createElement("label");
-                    const unlockLevel = TRACK_UNLOCK_LEVELS[i];
-                    const isLocked = currentLevel < unlockLevel;
-                    const lockText = isLocked ? ` 🔒 LVL ${unlockLevel}` : "";
-                    const lockedStyle = isLocked
-                        ? "opacity: 0.5; cursor: not-allowed;"
-                        : "";
-
-                    label.innerHTML = `<input type="checkbox" ${enabledTracks[i] ? "checked" : ""} data-index="${i}" ${isLocked ? "disabled" : ""}> Track ${i}${lockText}`;
-                    label.style.cssText = lockedStyle;
-                    trackListDiv.appendChild(label);
-
-                    if (!isLocked) {
-                        label
-                            .querySelector("input")
-                            .addEventListener("change", (e) => {
-                                enabledTracks[i] = e.target.checked;
-                                localStorage.setItem(
-                                    "neonGapEnabledTracks",
-                                    JSON.stringify(enabledTracks),
-                                );
-                                if (
-                                    !e.target.checked &&
-                                    i === currentTrackIndex &&
-                                    !musicPlayer.paused
-                                ) {
-                                    let next = (i + 1) % playlist.length;
-                                    let attempts = 0;
-                                    while (
-                                        (currentLevel <
-                                            TRACK_UNLOCK_LEVELS[next] ||
-                                            !enabledTracks[next]) &&
-                                        attempts < playlist.length
-                                    ) {
-                                        next = (next + 1) % playlist.length;
-                                        attempts++;
-                                    }
-                                    if (attempts < playlist.length) {
-                                        loadAndPlay(next);
-                                    }
-                                }
-                            });
+                label.querySelector("input").addEventListener("change", (e) => {
+                    enabledTracks[i] = e.target.checked;
+                    localStorage.setItem(
+                        "neonGapEnabledTracks",
+                        JSON.stringify(enabledTracks),
+                    );
+                    // If current track was disabled, skip to next
+                    if (
+                        !e.target.checked &&
+                        i === currentTrackIndex &&
+                        !musicPlayer.paused
+                    ) {
+                        let next = (i + 1) % playlist.length;
+                        let attempts = 0;
+                        while (
+                            !enabledTracks[next] &&
+                            attempts < playlist.length
+                        ) {
+                            next = (next + 1) % playlist.length;
+                            attempts++;
+                        }
+                        if (attempts < playlist.length) {
+                            loadAndPlay(next);
+                        }
                     }
                 });
-            }
+            });
 
             function updateFilter(muffled) {
                 if (!lowPassFilter) return;
@@ -1408,6 +1345,50 @@
                     0.2,
                 );
             }
+
+            // --- MOBILE DEVICE SETUP ---
+            // Handle high-DPI displays for crisp rendering
+            const dpr = window.devicePixelRatio || 1;
+
+            // Fix for iOS Safari 100vh issue
+            function setMobileHeight() {
+                const vh = window.innerHeight * 0.01;
+                document.documentElement.style.setProperty("--vh", `${vh}px`);
+            }
+            setMobileHeight();
+            window.addEventListener("resize", setMobileHeight);
+            window.addEventListener("orientationchange", () => {
+                setTimeout(setMobileHeight, 100);
+            });
+
+            // Prevent mobile scrolling/bouncing
+            document.addEventListener(
+                "touchmove",
+                function (e) {
+                    if (
+                        e.target === document.getElementById("leftZone") ||
+                        e.target === document.getElementById("rightZone") ||
+                        e.target.tagName === "CANVAS"
+                    ) {
+                        e.preventDefault();
+                    }
+                },
+                { passive: false },
+            );
+
+            // Prevent double-tap zoom
+            let lastTouchEnd = 0;
+            document.addEventListener(
+                "touchend",
+                function (e) {
+                    const now = Date.now();
+                    if (now - lastTouchEnd <= 300) {
+                        e.preventDefault();
+                    }
+                    lastTouchEnd = now;
+                },
+                { passive: false },
+            );
 
             // --- DIGITAL RAIN OVERLAY ---
             const rainCanvas = document.getElementById("rainCanvas");
@@ -1421,8 +1402,11 @@
             let rainDrops = [];
 
             function initRain() {
-                rainCanvas.width = window.innerWidth;
-                rainCanvas.height = window.innerHeight;
+                // Scale for high-DPI displays
+                const rect = rainCanvas.getBoundingClientRect();
+                rainCanvas.width = rect.width * dpr;
+                rainCanvas.height = rect.height * dpr;
+                rainCtx.scale(dpr, dpr);
                 const columns = Math.floor(rainCanvas.width / fontSize);
                 rainColumns = [];
                 rainDrops = [];
@@ -1536,9 +1520,6 @@
 
                     // Haptic feedback for level up
                     triggerHaptic([100, 50, 100, 50, 200]);
-
-                    // Refresh track list to show newly unlocked tracks
-                    refreshTrackList();
                 }
             }
 
@@ -1772,19 +1753,24 @@
                     if (hapticEnabled) triggerHaptic(50);
                 });
 
+            // Touch events with { passive: false } for mobile
             ["mousedown", "touchstart"].forEach((evt) => {
-                document
-                    .getElementById("leftZone")
-                    .addEventListener(evt, (e) => {
+                document.getElementById("leftZone").addEventListener(
+                    evt,
+                    (e) => {
                         e.preventDefault();
                         handleInput("left");
-                    });
-                document
-                    .getElementById("rightZone")
-                    .addEventListener(evt, (e) => {
+                    },
+                    { passive: false },
+                );
+                document.getElementById("rightZone").addEventListener(
+                    evt,
+                    (e) => {
                         e.preventDefault();
                         handleInput("right");
-                    });
+                    },
+                    { passive: false },
+                );
             });
 
             document.addEventListener("keydown", (e) => {
@@ -1989,10 +1975,12 @@
             }
 
             function draw() {
-                // Clear canvas completely (transparent)
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
+                // Clear canvas (don't reset width/height, just clear)
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Save context for DPR scaling
+                ctx.save();
+                ctx.scale(dpr, dpr);
 
                 // Apply screen shake offset
                 ctx.save();
@@ -2195,16 +2183,9 @@
                 requestAnimationFrame(loop);
             }
 
+            setupGameCanvas();
             loadData();
             loop();
         </script>
-        <script>
-            window.si =
-                window.si ||
-                function () {
-                    (window.siq = window.siq || []).push(arguments);
-                };
-        </script>
-        <script defer src="/<unique-path>/script.js"></script>
     </body>
 </html>
