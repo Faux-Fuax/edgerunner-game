@@ -1,0 +1,2108 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
+        <title>EdgeRunner x 3399</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+                touch-action: none;
+                user-select: none;
+                -webkit-user-select: none;
+            }
+            body {
+                background: #000;
+                overflow: hidden;
+                font-family: "Courier New", monospace;
+            }
+
+            /* Game canvas on top */
+            #gameCanvas {
+                position: absolute;
+                top: 0;
+                left: 0;
+                z-index: 10;
+                display: block;
+            }
+
+            /* Star Wars 3D Background - Behind everything */
+            #starfield {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 0;
+                overflow: hidden;
+                background: #000;
+            }
+
+            /* 3D Perspective container */
+            .perspective-container {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                perspective: 400px;
+                overflow: hidden;
+            }
+
+            /* The grid that scrolls toward viewer */
+            .grid-3d {
+                position: absolute;
+                width: 200%;
+                height: 200%;
+                left: -50%;
+                top: -50%;
+                transform-origin: 50% 100%;
+                transform: rotateX(75deg);
+                animation: gridMove 2s linear infinite;
+            }
+
+            @keyframes gridMove {
+                0% {
+                    transform: rotateX(75deg) translateY(0);
+                }
+                100% {
+                    transform: rotateX(75deg) translateY(50px);
+                }
+            }
+
+            /* Grid lines */
+            .grid-lines {
+                width: 100%;
+                height: 100%;
+                background-image:
+                    linear-gradient(
+                        to right,
+                        var(--grid-color, #00ffff) 2px,
+                        transparent 2px
+                    ),
+                    linear-gradient(
+                        to bottom,
+                        var(--grid-color, #00ffff) 2px,
+                        transparent 2px
+                    );
+                background-size: 50px 50px;
+                opacity: 0.6;
+            }
+
+            /* Horizon glow effect */
+            .horizon {
+                position: absolute;
+                width: 100%;
+                height: 200px;
+                top: 50%;
+                left: 0;
+                background: linear-gradient(
+                    to bottom,
+                    var(--grid-color, #00ffff),
+                    transparent
+                );
+                opacity: 0.3;
+                transform: translateY(-50%);
+                pointer-events: none;
+            }
+
+            /* Level-specific color themes */
+            .level-1 {
+                --grid-color: #00ffff;
+                --shape-color: #ff00ff;
+            }
+            .level-2 {
+                --grid-color: #ff0040;
+                --shape-color: #ffff00;
+            }
+            .level-3 {
+                --grid-color: #00ff00;
+                --shape-color: #ff00ff;
+            }
+            .level-4 {
+                --grid-color: #9400d3;
+                --shape-color: #00ffff;
+            }
+            .level-5 {
+                --grid-color: #ffd700;
+                --shape-color: #ff0040;
+            }
+            .level-6 {
+                --grid-color: #ff6600;
+                --shape-color: #00ffff;
+            }
+            .level-7 {
+                --grid-color: #ff00ff;
+                --shape-color: #ffff00;
+            }
+
+            /* Central Menu Hub */
+            #centralHub {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                background: rgba(0, 0, 0, 0.95);
+                border: 2px solid #00ffff;
+                box-shadow: 0 0 20px #00ffff;
+                padding: 30px;
+                color: #00ffff;
+                z-index: 100;
+                text-align: center;
+                width: 90%;
+                max-width: 400px;
+            }
+
+            #topLeft {
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                text-align: left;
+                color: #00ffff;
+                text-shadow: 0 0 10px #00ffff;
+                z-index: 15;
+            }
+
+            #currency {
+                position: absolute;
+                top: 60px;
+                right: 20px;
+                color: #ffd700;
+                font-size: 18px;
+                text-shadow: 0 0 10px #ffd700;
+                z-index: 15;
+            }
+
+            #levelIndicator {
+                font-size: 16px;
+                color: #ff00ff;
+                text-shadow: 0 0 10px #ff00ff;
+                margin-top: 5px;
+            }
+
+            .ui-btn {
+                background: rgba(0, 255, 255, 0.1);
+                border: 1px solid #00ffff;
+                color: #00ffff;
+                padding: 12px;
+                cursor: pointer;
+                font-family: "Courier New", monospace;
+                text-transform: uppercase;
+                margin-top: 10px;
+                width: 100%;
+                transition: all 0.2s;
+            }
+            .ui-btn:active {
+                background: #00ffff;
+                color: #000;
+            }
+            .secondary-btn {
+                border-color: #ff00ff;
+                color: #ff00ff;
+                box-shadow: 0 0 5px #ff00ff;
+            }
+
+            .sub-menu {
+                display: none;
+                margin-top: 20px;
+                border-top: 1px solid #333;
+                padding-top: 20px;
+                max-height: 300px;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .shop-item {
+                background: rgba(0, 255, 255, 0.1);
+                border: 1px solid #00ffff;
+                margin: 10px 0;
+                padding: 10px;
+                border-radius: 5px;
+                cursor: pointer;
+                transition: all 0.3s;
+                text-align: left;
+                position: relative;
+            }
+            .shop-item:hover {
+                background: rgba(0, 255, 255, 0.2);
+            }
+            .shop-item.owned {
+                border-color: #ffd700;
+                background: rgba(255, 215, 0, 0.1);
+            }
+            .shop-item.selected {
+                background: rgba(0, 255, 255, 0.3);
+                box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+            }
+            .shop-item .checkmark {
+                position: absolute;
+                right: 10px;
+                top: 50%;
+                transform: translateY(-50%);
+                color: #00ff00;
+                font-size: 16px;
+                display: none;
+            }
+            .shop-item.selected .checkmark {
+                display: block;
+            }
+            @keyframes shake {
+                0%,
+                100% {
+                    transform: translateX(0);
+                }
+                25% {
+                    transform: translateX(-5px);
+                }
+                75% {
+                    transform: translateX(5px);
+                }
+            }
+            .shop-item.shake {
+                animation: shake 0.4s ease-in-out;
+            }
+            .item-name {
+                font-weight: bold;
+                color: #fff;
+                font-size: 14px;
+            }
+            .item-desc {
+                font-size: 10px;
+                color: #aaa;
+                margin-top: 2px;
+            }
+            .item-price {
+                color: #ffd700;
+                font-size: 12px;
+                margin-top: 2px;
+            }
+
+            #boosterBar {
+                position: absolute;
+                bottom: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                gap: 10px;
+                z-index: 10;
+            }
+            .booster-slot {
+                width: 45px;
+                height: 45px;
+                border: 2px solid #00ffff;
+                border-radius: 5px;
+                background: rgba(0, 0, 0, 0.7);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                color: #00ffff;
+                font-size: 18px;
+                cursor: pointer;
+                position: relative;
+                transition: all 0.3s;
+            }
+            .booster-slot.active {
+                background: rgba(0, 255, 255, 0.3);
+                animation: pulse 1s infinite;
+                box-shadow: 0 0 20px #00ffff;
+            }
+            .booster-slot.cooldown {
+                opacity: 0.3;
+            }
+            .booster-slot .count {
+                position: absolute;
+                bottom: -5px;
+                right: -5px;
+                font-size: 10px;
+                background: #ffd700;
+                color: #000;
+                border-radius: 50%;
+                width: 16px;
+                height: 16px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border: 1px solid #000;
+            }
+            .booster-slot .active-indicator {
+                position: absolute;
+                top: -5px;
+                left: 50%;
+                transform: translateX(-50%);
+                width: 8px;
+                height: 8px;
+                background: #00ff00;
+                border-radius: 50%;
+                box-shadow: 0 0 10px #00ff00;
+                display: none;
+                animation: blink 0.5s infinite;
+            }
+            .booster-slot.active .active-indicator {
+                display: block;
+            }
+            @keyframes blink {
+                0%,
+                100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.3;
+                }
+            }
+
+            #levelBreak {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                font-size: 48px;
+                color: #ff00ff;
+                text-shadow: 0 0 30px #ff00ff;
+                display: none;
+                z-index: 110;
+                pointer-events: none;
+                animation: levelPulse 2s ease-out;
+            }
+            @keyframes levelPulse {
+                0% {
+                    opacity: 0;
+                    transform: translate(-50%, -50%) scale(0.5);
+                }
+                50% {
+                    opacity: 1;
+                    transform: translate(-50%, -50%) scale(1.2);
+                }
+                100% {
+                    opacity: 0;
+                    transform: translate(-50%, -50%) scale(1);
+                }
+            }
+
+            .section-title {
+                color: #ff00ff;
+                font-size: 12px;
+                margin: 15px 0 5px 0;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+                border-bottom: 1px solid #ff00ff;
+                padding-bottom: 2px;
+                text-align: left;
+            }
+
+            .track-list {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                text-align: left;
+                font-size: 12px;
+                margin-top: 10px;
+            }
+
+            #topRight {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                color: #00ffff;
+                font-size: 32px;
+                z-index: 15;
+                pointer-events: none;
+            }
+            #gameOver {
+                position: absolute;
+                top: 40%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: #ff0040;
+                font-size: 48px;
+                text-shadow: 0 0 20px #ff0040;
+                display: none;
+                z-index: 20;
+                text-align: center;
+            }
+
+            .pulse {
+                animation: pulse 2s infinite;
+            }
+            @keyframes pulse {
+                0%,
+                100% {
+                    opacity: 1;
+                }
+                50% {
+                    opacity: 0.5;
+                }
+            }
+
+            /* Haptic toggle in settings */
+            .haptic-toggle {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-top: 15px;
+                padding: 10px;
+                background: rgba(0, 255, 255, 0.05);
+                border: 1px solid #00ffff;
+                border-radius: 5px;
+            }
+            .haptic-toggle label {
+                font-size: 12px;
+                color: #00ffff;
+            }
+            .toggle-switch {
+                position: relative;
+                width: 40px;
+                height: 20px;
+                background: #333;
+                border-radius: 10px;
+                cursor: pointer;
+                transition: background 0.3s;
+            }
+            .toggle-switch.active {
+                background: #00ffff;
+            }
+            .toggle-switch::after {
+                content: "";
+                position: absolute;
+                top: 2px;
+                left: 2px;
+                width: 16px;
+                height: 16px;
+                background: #fff;
+                border-radius: 50%;
+                transition: transform 0.3s;
+            }
+            .toggle-switch.active::after {
+                transform: translateX(20px);
+            }
+            /* Digital Rain Canvas Overlay */
+            #rainCanvas {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                z-index: 5;
+                pointer-events: none;
+                opacity: 0.3;
+                mix-blend-mode: screen;
+            }
+
+            /* Synthwave Sunset Background */
+            .synthwave-sky {
+                position: absolute;
+                width: 100%;
+                height: 60%;
+                top: 0;
+                left: 0;
+                background: linear-gradient(
+                    to bottom,
+                    var(--sky-top, #0d0221) 0%,
+                    var(--sky-mid, #45125e) 40%,
+                    var(--sky-bottom, #a22561) 80%,
+                    var(--sunset-color, #ff3864) 100%
+                );
+                z-index: 0;
+            }
+
+            /* Retro Sun */
+            .retro-sun {
+                position: absolute;
+                width: 30vw;
+                height: 30vw;
+                max-width: 300px;
+                max-height: 300px;
+                background: linear-gradient(
+                    to bottom,
+                    var(--sun-color, #ff3864) 0%,
+                    var(--sun-bottom, #f80) 100%
+                );
+                border-radius: 50%;
+                left: 50%;
+                bottom: 40%;
+                transform: translateX(-50%);
+                box-shadow:
+                    0 0 60px var(--sun-glow, #800080),
+                    0 0 120px var(--sun-glow, #800080),
+                    inset 0 0 40px rgba(0, 0, 0, 0.3);
+                z-index: 1;
+                overflow: hidden;
+            }
+
+            /* Sun stripes effect */
+            .retro-sun::before {
+                content: "";
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                background: repeating-linear-gradient(
+                    to bottom,
+                    transparent 0%,
+                    transparent 8%,
+                    rgba(0, 0, 0, 0.3) 8%,
+                    rgba(0, 0, 0, 0.3) 12%
+                );
+            }
+
+            /* Wireframe Mountains */
+            .mountains {
+                position: absolute;
+                width: 100%;
+                height: 25%;
+                bottom: 40%;
+                left: 0;
+                z-index: 2;
+            }
+
+            .mountain {
+                position: absolute;
+                bottom: 0;
+                background: linear-gradient(
+                    to bottom,
+                    transparent 0%,
+                    var(--mountain-color, #090910) 40%,
+                    var(--mountain-dark, #450547) 100%
+                );
+                clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            }
+
+            .mountain:nth-child(1) {
+                width: 20%;
+                height: 40%;
+                left: -5%;
+            }
+            .mountain:nth-child(2) {
+                width: 25%;
+                height: 60%;
+                left: 5%;
+            }
+            .mountain:nth-child(3) {
+                width: 30%;
+                height: 80%;
+                left: 15%;
+                z-index: 3;
+            }
+            .mountain:nth-child(4) {
+                width: 35%;
+                height: 100%;
+                left: 30%;
+                z-index: 4;
+            }
+            .mountain:nth-child(5) {
+                width: 35%;
+                height: 90%;
+                right: 25%;
+                z-index: 3;
+            }
+            .mountain:nth-child(6) {
+                width: 30%;
+                height: 70%;
+                right: 15%;
+            }
+            .mountain:nth-child(7) {
+                width: 25%;
+                height: 50%;
+                right: 5%;
+            }
+            .mountain:nth-child(8) {
+                width: 20%;
+                height: 35%;
+                right: -5%;
+            }
+
+            /* Cyberpunk City Skyline */
+            .city-skyline {
+                position: absolute;
+                width: 100%;
+                height: 15%;
+                bottom: 40%;
+                left: 0;
+                z-index: 3;
+                display: flex;
+                align-items: flex-end;
+                justify-content: space-around;
+                padding: 0 5%;
+            }
+
+            .building {
+                background: linear-gradient(
+                    to top,
+                    var(--building-color, #1a0b2e) 0%,
+                    transparent 100%
+                );
+                border: 1px solid var(--grid-color, #00ffff);
+                border-bottom: none;
+                position: relative;
+                box-shadow: 0 0 10px var(--grid-color, #00ffff);
+            }
+
+            .building::before {
+                content: "";
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                background: repeating-linear-gradient(
+                    to bottom,
+                    transparent 0%,
+                    transparent 15%,
+                    var(--window-color, rgba(0, 255, 255, 0.3)) 15%,
+                    var(--window-color, rgba(0, 255, 255, 0.3)) 20%
+                );
+                opacity: 0.5;
+            }
+
+            /* Updated level themes with synthwave colors */
+            .level-1 {
+                --grid-color: #00ffff;
+                --rain-color: #ff0040;
+                --sky-top: #0d0221;
+                --sky-mid: #45125e;
+                --sky-bottom: #a22561;
+                --sunset-color: #ff3864;
+                --sun-color: #ff3864;
+                --sun-bottom: #f80;
+                --sun-glow: #800080;
+                --mountain-color: #090910;
+                --mountain-dark: #450547;
+                --building-color: #1a0b2e;
+                --window-color: rgba(0, 255, 255, 0.3);
+            }
+            .level-2 {
+                --grid-color: #ff0040;
+                --rain-color: #00ff00;
+                --sky-top: #1a0208;
+                --sky-mid: #5e1225;
+                --sky-bottom: #ff3864;
+                --sunset-color: #ff9100;
+                --sun-color: #ff5e00;
+                --sun-bottom: #ff0;
+                --sun-glow: #ff0040;
+                --mountain-color: #100505;
+                --mountain-dark: #5e1225;
+                --building-color: #2e0b1a;
+                --window-color: rgba(255, 0, 64, 0.3);
+            }
+            .level-3 {
+                --grid-color: #00ff00;
+                --rain-color: #ff00ff;
+                --sky-top: #021a02;
+                --sky-mid: #125e12;
+                --sky-bottom: #38ff64;
+                --sunset-color: #00ffaa;
+                --sun-color: #00ff80;
+                --sun-bottom: #80ff00;
+                --sun-glow: #00ff00;
+                --mountain-color: #051005;
+                --mountain-dark: #125e12;
+                --building-color: #0b2e1a;
+                --window-color: rgba(0, 255, 0, 0.3);
+            }
+            .level-4 {
+                --grid-color: #9400d3;
+                --rain-color: #ffff00;
+                --sky-top: #0f021a;
+                --sky-mid: #3d125e;
+                --sky-bottom: #9d38ff;
+                --sunset-color: #e0ff00;
+                --sun-color: #d500ff;
+                --sun-bottom: #ff00e0;
+                --sun-glow: #9400d3;
+                --mountain-color: #120510;
+                --mountain-dark: #3d125e;
+                --building-color: #1f0b2e;
+                --window-color: rgba(148, 0, 211, 0.3);
+            }
+            .level-5 {
+                --grid-color: #ffd700;
+                --rain-color: #0080ff;
+                --sky-top: #1a1502;
+                --sky-mid: #5e4a12;
+                --sky-bottom: #ffaa38;
+                --sunset-color: #ff0040;
+                --sun-color: #ffaa00;
+                --sun-bottom: #ff0040;
+                --sun-glow: #ffd700;
+                --mountain-color: #151005;
+                --mountain-dark: #5e4a12;
+                --building-color: #2e260b;
+                --window-color: rgba(255, 215, 0, 0.3);
+            }
+            .level-6 {
+                --grid-color: #ff6600;
+                --rain-color: #00ffff;
+                --sky-top: #1a0f02;
+                --sky-mid: #5e2f12;
+                --sky-bottom: #ff8038;
+                --sunset-color: #ff0040;
+                --sun-color: #ff4500;
+                --sun-bottom: #ff00ff;
+                --sun-glow: #ff6600;
+                --mountain-color: #150a05;
+                --mountain-dark: #5e2f12;
+                --building-color: #2e1a0b;
+                --window-color: rgba(255, 102, 0, 0.3);
+            }
+            .level-7 {
+                --grid-color: #ff00ff;
+                --rain-color: #00ff00;
+                --sky-top: #1a021a;
+                --sky-mid: #5e125e;
+                --sky-bottom: #ff38ff;
+                --sunset-color: #00ff80;
+                --sun-color: #ff00ff;
+                --sun-bottom: #8000ff;
+                --sun-glow: #ff00ff;
+                --mountain-color: #150515;
+                --mountain-dark: #5e125e;
+                --building-color: #2e0b2e;
+                --window-color: rgba(255, 0, 255, 0.3);
+            }
+        </style>
+        <base target="_blank" />
+    </head>
+    <body>
+        <!-- Synthwave + Digital Rain Background -->
+        <div id="starfield" class="level-1">
+            <!-- Synthwave Sky -->
+            <div class="synthwave-sky"></div>
+
+            <!-- Retro Sun -->
+            <div class="retro-sun"></div>
+
+            <!-- Wireframe Mountains -->
+            <div class="mountains">
+                <div class="mountain"></div>
+                <div class="mountain"></div>
+                <div class="mountain"></div>
+                <div class="mountain"></div>
+                <div class="mountain"></div>
+                <div class="mountain"></div>
+                <div class="mountain"></div>
+                <div class="mountain"></div>
+            </div>
+
+            <!-- Cyberpunk City Skyline -->
+            <div class="city-skyline">
+                <div class="building" style="width: 4%; height: 30%"></div>
+                <div class="building" style="width: 6%; height: 50%"></div>
+                <div class="building" style="width: 5%; height: 40%"></div>
+                <div class="building" style="width: 7%; height: 70%"></div>
+                <div class="building" style="width: 5%; height: 60%"></div>
+                <div class="building" style="width: 6%; height: 80%"></div>
+                <div class="building" style="width: 4%; height: 45%"></div>
+                <div class="building" style="width: 5%; height: 65%"></div>
+                <div class="building" style="width: 6%; height: 55%"></div>
+                <div class="building" style="width: 4%; height: 35%"></div>
+                <div class="building" style="width: 5%; height: 75%"></div>
+                <div class="building" style="width: 6%; height: 50%"></div>
+                <div class="building" style="width: 4%; height: 40%"></div>
+                <div class="building" style="width: 5%; height: 60%"></div>
+                <div class="building" style="width: 7%; height: 85%"></div>
+                <div class="building" style="width: 5%; height: 45%"></div>
+            </div>
+
+            <!-- 3D Grid Floor -->
+            <div class="perspective-container">
+                <div class="horizon"></div>
+                <div class="grid-3d">
+                    <div class="grid-lines"></div>
+                </div>
+            </div>
+
+            <!-- Digital Rain Canvas -->
+            <canvas id="rainCanvas"></canvas>
+        </div>
+
+        <div id="topLeft">
+            <div id="levelIndicator">LEVEL 1</div>
+        </div>
+        <div id="topRight"><div id="score">0</div></div>
+        <div id="currency">⚡ 0</div>
+
+        <div id="centralHub">
+            <h1 class="pulse" style="font-size: 28px; margin-bottom: 10px">
+                EdgeRunner x 3399
+            </h1>
+
+            <div id="instructions">
+                <p>ARROWS or TAP → Move</p>
+                <p>SPACE or DEPLOY → Start</p>
+                <p>DONT MISS THE GAPS!</p>
+                <p style="font-size: 10px; margin-top: 5px; color: #888">
+                    Hotkeys: [1][2][3] for Boosters
+                </p>
+                <p style="font-size: 12px; margin-top: 10px; color: #ff00ff">
+                    Record: <span id="highScoreText">0</span>
+                </p>
+            </div>
+
+            <button
+                id="playBtn"
+                class="ui-btn"
+                style="font-size: 20px; font-weight: bold"
+            >
+                DEPLOY
+            </button>
+
+            <div
+                style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px"
+            >
+                <button id="toggleAudio" class="ui-btn">Playlist</button>
+                <button id="toggleShop" class="ui-btn secondary-btn">
+                    Arsenal
+                </button>
+            </div>
+
+            <div id="audioMenu" class="sub-menu">
+                <label>Neural Volume</label>
+                <input
+                    type="range"
+                    id="volumeSlider"
+                    style="width: 100%; accent-color: #00ffff"
+                    value="80"
+                />
+                <div class="track-list" id="trackList"></div>
+
+                <div class="haptic-toggle">
+                    <label>Haptic Feedback</label>
+                    <div class="toggle-switch active" id="hapticToggle"></div>
+                </div>
+            </div>
+
+            <div id="shopMenu" class="sub-menu">
+                <div
+                    style="
+                        color: #ffd700;
+                        margin-bottom: 10px;
+                        font-size: 20px;
+                        text-align: center;
+                    "
+                >
+                    ⚡ <span id="shopCurrency">0</span>
+                </div>
+
+                <div class="section-title">Skins</div>
+                <div id="skinList">
+                    <!-- Skins will be injected by JS -->
+                </div>
+
+                <div class="section-title">Boosters</div>
+                <div class="shop-item" onclick="buyBooster('slowmo', 300)">
+                    <div class="item-name">⏱️ TIMEBEND</div>
+                    <div class="item-desc">Slow time to 50% for 3 seconds</div>
+                    <div class="item-price">
+                        ⚡ 300 (<span id="slowmoCount">0</span> owned)
+                    </div>
+                </div>
+
+                <div class="shop-item" onclick="buyBooster('shield', 400)">
+                    <div class="item-name">🛡️ VOID SHIELD</div>
+                    <div class="item-desc">Ignore next fatal collision</div>
+                    <div class="item-price">
+                        ⚡ 400 (<span id="shieldCount">0</span> owned)
+                    </div>
+                </div>
+
+                <div class="shop-item" onclick="buyBooster('warp', 600)">
+                    <div class="item-name">⚡ PHASE WARP</div>
+                    <div class="item-desc">Auto-teleport through next gap</div>
+                    <div class="item-price">
+                        ⚡ 600 (<span id="warpCount">0</span> owned)
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="gameOver">
+            CRITICAL FAILURE
+            <p style="font-size: 20px; color: #00ffff; margin-top: 10px">
+                Score: <span id="finalScore">0</span>
+            </p>
+            <p style="font-size: 16px; color: #ffd700">
+                Energy Gained: ⚡ <span id="earnedCurrency">0</span>
+            </p>
+            <p
+                style="
+                    font-size: 20px;
+                    color: #00ffff;
+                    margin-top: 20px;
+                    cursor: pointer;
+                "
+                onclick="location.reload()"
+            >
+                Tap to return to Menu
+            </p>
+        </div>
+
+        <div id="levelBreak">LEVEL UP!</div>
+        <div id="boosterBar"></div>
+
+        <div
+            id="leftZone"
+            style="
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 50%;
+                height: 100%;
+                z-index: 5;
+            "
+        ></div>
+        <div
+            id="rightZone"
+            style="
+                position: absolute;
+                right: 0;
+                top: 0;
+                width: 50%;
+                height: 100%;
+                z-index: 5;
+            "
+        ></div>
+
+        <canvas id="gameCanvas"></canvas>
+
+        <script>
+            const canvas = document.getElementById("gameCanvas");
+            const ctx = canvas.getContext("2d");
+            const starfield = document.getElementById("starfield");
+            const scoreEl = document.getElementById("score");
+            const hub = document.getElementById("centralHub");
+            const gameOverEl = document.getElementById("gameOver");
+            const levelIndicatorEl = document.getElementById("levelIndicator");
+            const currencyEl = document.getElementById("currency");
+            const shopCurrencyEl = document.getElementById("shopCurrency");
+            const skinListEl = document.getElementById("skinList");
+            const boosterBarEl = document.getElementById("boosterBar");
+            const levelBreakEl = document.getElementById("levelBreak");
+
+            let gameState = "menu";
+            let score = 0;
+            let highScore = localStorage.getItem("neonGapHighScore") || 0;
+            document.getElementById("highScoreText").textContent = highScore;
+
+            let currency =
+                parseInt(localStorage.getItem("neonGapCurrency")) || 0;
+            let currentLevel = 1;
+            let backgroundHue = 200;
+
+            // Haptic feedback setting
+            let hapticEnabled =
+                localStorage.getItem("neonGapHaptic") !== "false";
+
+            // Screen shake offset
+            let screenShakeOffset = { x: 0, y: 0 };
+            let screenShakeIntensity = 0;
+
+            const skins = {
+                neon: {
+                    name: "Neon Cyan",
+                    color: "#00ffff",
+                    glow: "#00ffff",
+                    trail: "rgba(0, 255, 255,",
+                    owned: true,
+                    price: 0,
+                },
+                crimson: {
+                    name: "Crimson Velocity",
+                    color: "#ff0040",
+                    glow: "#ff0040",
+                    trail: "rgba(255, 0, 64,",
+                    owned: false,
+                    price: 500,
+                },
+                void: {
+                    name: "Void Walker",
+                    color: "#9400d3",
+                    glow: "#9400d3",
+                    trail: "rgba(148, 0, 211,",
+                    owned: false,
+                    price: 1000,
+                },
+                gold: {
+                    name: "Chrono Gold",
+                    color: "#ffd700",
+                    glow: "#ffd700",
+                    trail: "rgba(255, 215, 0,",
+                    owned: false,
+                    price: 2500,
+                },
+                emerald: {
+                    name: "Emerald Glitch",
+                    color: "#00ff00",
+                    glow: "#00ff00",
+                    trail: "rgba(0, 255, 0,",
+                    owned: false,
+                    price: 1500,
+                },
+            };
+            let selectedSkin = localStorage.getItem("neonGapSkin") || "neon";
+            let boosters = {
+                slowmo: parseInt(localStorage.getItem("neonGapSlowmo")) || 0,
+                shield: parseInt(localStorage.getItem("neonGapShield")) || 0,
+                warp: parseInt(localStorage.getItem("neonGapWarp")) || 0,
+            };
+            let activeBoosterSlots = [];
+            let boosterCooldowns = {};
+
+            function saveData() {
+                localStorage.setItem("neonGapCurrency", currency);
+                localStorage.setItem("neonGapSlowmo", boosters.slowmo);
+                localStorage.setItem("neonGapShield", boosters.shield);
+                localStorage.setItem("neonGapWarp", boosters.warp);
+                localStorage.setItem("neonGapSkin", selectedSkin);
+                localStorage.setItem("neonGapHaptic", hapticEnabled);
+                Object.keys(skins).forEach((key) => {
+                    if (key !== "neon")
+                        localStorage.setItem(
+                            `neonGapSkin_${key}`,
+                            skins[key].owned,
+                        );
+                });
+            }
+
+            function loadData() {
+                Object.keys(skins).forEach((key) => {
+                    if (key === "neon") return;
+                    const owned = localStorage.getItem(`neonGapSkin_${key}`);
+                    if (owned !== null) skins[key].owned = owned === "true";
+                });
+                updateCurrencyDisplay();
+                updateShopDisplay();
+                updateHapticToggle();
+            }
+
+            function updateCurrencyDisplay() {
+                currencyEl.textContent = `⚡ ${currency}`;
+                shopCurrencyEl.textContent = currency;
+            }
+
+            function updateShopDisplay() {
+                // Update Booster Counts
+                document.getElementById("slowmoCount").textContent =
+                    boosters.slowmo;
+                document.getElementById("shieldCount").textContent =
+                    boosters.shield;
+                document.getElementById("warpCount").textContent =
+                    boosters.warp;
+
+                // Update Skin List
+                skinListEl.innerHTML = "";
+                Object.keys(skins).forEach((key) => {
+                    const skin = skins[key];
+                    const div = document.createElement("div");
+                    div.className = `shop-item ${skin.owned ? "owned" : ""} ${key === selectedSkin ? "selected" : ""}`;
+                    div.onclick = () => buySkin(key);
+                    div.innerHTML = `
+                        <div class="item-name">${skin.name}</div>
+                        <div class="item-price">${skin.owned ? "OWNED" : "⚡ " + skin.price}</div>
+                        <span class="checkmark">✓</span>
+                    `;
+                    skinListEl.appendChild(div);
+                });
+            }
+
+            function updateHapticToggle() {
+                const toggle = document.getElementById("hapticToggle");
+                if (hapticEnabled) {
+                    toggle.classList.add("active");
+                } else {
+                    toggle.classList.remove("active");
+                }
+            }
+
+            function buySkin(key) {
+                const skin = skins[key];
+                const item = event.currentTarget;
+                if (skin.owned) {
+                    selectedSkin = key;
+                    saveData();
+                    updateShopDisplay();
+                    return;
+                }
+                if (currency >= skin.price) {
+                    currency -= skin.price;
+                    skin.owned = true;
+                    selectedSkin = key;
+                    saveData();
+                    updateCurrencyDisplay();
+                    updateShopDisplay();
+                } else {
+                    item.classList.add("shake");
+                    setTimeout(() => item.classList.remove("shake"), 400);
+                }
+            }
+
+            function buyBooster(type, price) {
+                const item = event.currentTarget;
+                if (currency >= price) {
+                    currency -= price;
+                    boosters[type]++;
+                    saveData();
+                    updateCurrencyDisplay();
+                    updateShopDisplay();
+                } else {
+                    item.classList.add("shake");
+                    setTimeout(() => item.classList.remove("shake"), 400);
+                }
+            }
+
+            // Haptic feedback function
+            function triggerHaptic(pattern) {
+                if (!hapticEnabled) return;
+                if (navigator.vibrate) {
+                    navigator.vibrate(pattern);
+                }
+            }
+
+            // Screen shake function
+            function triggerScreenShake(intensity = 10, duration = 500) {
+                screenShakeIntensity = intensity;
+                setTimeout(() => {
+                    screenShakeIntensity = 0;
+                    screenShakeOffset = { x: 0, y: 0 };
+                }, duration);
+            }
+
+            // Update screen shake
+            function updateScreenShake() {
+                if (screenShakeIntensity > 0) {
+                    screenShakeOffset.x =
+                        (Math.random() - 0.5) * screenShakeIntensity;
+                    screenShakeOffset.y =
+                        (Math.random() - 0.5) * screenShakeIntensity;
+                }
+            }
+
+            // --- AUDIO SYSTEM ---
+            let audioCtx, musicSource, lowPassFilter;
+            let audioInited = false;
+            let masterVolume = 0.8;
+            let currentTrackIndex = 0;
+            const playlist = [
+                "music0.mp3",
+                "music1.mp3",
+                "music2.mp3",
+                "music3.mp3",
+                "music4.mp3",
+            ];
+            let enabledTracks =
+                JSON.parse(localStorage.getItem("neonGapEnabledTracks")) ||
+                playlist.map(() => true);
+            const musicPlayer = new Audio();
+            let musicStarted = false;
+            let savedTrackTime = 0;
+
+            function initAudio() {
+                if (audioInited) return;
+                audioCtx = new (
+                    window.AudioContext || window.webkitAudioContext
+                )();
+                lowPassFilter = audioCtx.createBiquadFilter();
+                lowPassFilter.type = "lowpass";
+                lowPassFilter.frequency.setValueAtTime(
+                    600,
+                    audioCtx.currentTime,
+                );
+                musicSource = audioCtx.createMediaElementSource(musicPlayer);
+                musicSource
+                    .connect(lowPassFilter)
+                    .connect(audioCtx.destination);
+
+                // Restore saved track position if exists
+                const savedTrack =
+                    parseInt(localStorage.getItem("neonGapCurrentTrack")) || 0;
+                const savedTime =
+                    parseFloat(localStorage.getItem("neonGapTrackTime")) || 0;
+                currentTrackIndex = savedTrack;
+                savedTrackTime = savedTime;
+
+                if (!musicStarted) {
+                    loadAndPlay(currentTrackIndex, savedTime);
+                    musicStarted = true;
+                }
+
+                // Save track position periodically
+                setInterval(() => {
+                    if (gameState !== "menu" && !musicPlayer.paused) {
+                        localStorage.setItem(
+                            "neonGapCurrentTrack",
+                            currentTrackIndex,
+                        );
+                        localStorage.setItem(
+                            "neonGapTrackTime",
+                            musicPlayer.currentTime,
+                        );
+                    }
+                }, 1000);
+
+                audioInited = true;
+            }
+
+            function loadAndPlay(index, startTime = 0) {
+                // Skip disabled tracks
+                if (!enabledTracks[index]) {
+                    let nextIndex = (index + 1) % playlist.length;
+                    let attempts = 0;
+                    while (
+                        !enabledTracks[nextIndex] &&
+                        attempts < playlist.length
+                    ) {
+                        nextIndex = (nextIndex + 1) % playlist.length;
+                        attempts++;
+                    }
+                    if (attempts >= playlist.length) return; // All tracks disabled
+                    index = nextIndex;
+                }
+
+                currentTrackIndex = index;
+                musicPlayer.src = playlist[index];
+                musicPlayer.currentTime = startTime;
+                musicPlayer.play().catch(() => {});
+
+                musicPlayer.onended = () => {
+                    let next = (currentTrackIndex + 1) % playlist.length;
+                    // Skip to next enabled track
+                    let attempts = 0;
+                    while (!enabledTracks[next] && attempts < playlist.length) {
+                        next = (next + 1) % playlist.length;
+                        attempts++;
+                    }
+                    if (attempts < playlist.length) {
+                        loadAndPlay(next);
+                    }
+                };
+            }
+
+            const trackListDiv = document.getElementById("trackList");
+            playlist.forEach((track, i) => {
+                const label = document.createElement("label");
+                label.innerHTML = `<input type="checkbox" ${enabledTracks[i] ? "checked" : ""} data-index="${i}"> Track ${i}`;
+                trackListDiv.appendChild(label);
+                label.querySelector("input").addEventListener("change", (e) => {
+                    enabledTracks[i] = e.target.checked;
+                    localStorage.setItem(
+                        "neonGapEnabledTracks",
+                        JSON.stringify(enabledTracks),
+                    );
+                    // If current track was disabled, skip to next
+                    if (
+                        !e.target.checked &&
+                        i === currentTrackIndex &&
+                        !musicPlayer.paused
+                    ) {
+                        let next = (i + 1) % playlist.length;
+                        let attempts = 0;
+                        while (
+                            !enabledTracks[next] &&
+                            attempts < playlist.length
+                        ) {
+                            next = (next + 1) % playlist.length;
+                            attempts++;
+                        }
+                        if (attempts < playlist.length) {
+                            loadAndPlay(next);
+                        }
+                    }
+                });
+            });
+
+            function updateFilter(muffled) {
+                if (!lowPassFilter) return;
+                lowPassFilter.frequency.setTargetAtTime(
+                    muffled ? 600 : 20000,
+                    audioCtx.currentTime,
+                    0.2,
+                );
+            }
+
+            // --- DIGITAL RAIN OVERLAY ---
+            const rainCanvas = document.getElementById("rainCanvas");
+            const rainCtx = rainCanvas.getContext("2d");
+
+            // Matrix characters (Katakana + Latin + Numbers)
+            const rainChars =
+                "アァイゥエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            const fontSize = 14;
+            let rainColumns = [];
+            let rainDrops = [];
+
+            function initRain() {
+                rainCanvas.width = window.innerWidth;
+                rainCanvas.height = window.innerHeight;
+                const columns = Math.floor(rainCanvas.width / fontSize);
+                rainColumns = [];
+                rainDrops = [];
+                for (let i = 0; i < columns; i++) {
+                    rainDrops[i] = Math.random() * -100; // Start above screen
+                    rainColumns.push({
+                        x: i * fontSize,
+                        y: rainDrops[i] * fontSize,
+                        speed: 0.5 + Math.random() * 1.5,
+                        char: rainChars[
+                            Math.floor(Math.random() * rainChars.length)
+                        ],
+                        opacity: 0.1 + Math.random() * 0.4,
+                    });
+                }
+            }
+
+            function drawRain() {
+                // Semi-transparent clear for trail effect
+                rainCtx.fillStyle = "rgba(0, 0, 0, 0.05)";
+                rainCtx.fillRect(0, 0, rainCanvas.width, rainCanvas.height);
+
+                // Get current rain color from CSS variable (complementary to grid)
+                const computedStyle = getComputedStyle(starfield);
+                const rainColor =
+                    computedStyle.getPropertyValue("--rain-color").trim() ||
+                    "#ff0040";
+
+                rainCtx.font = fontSize + "px monospace";
+
+                for (let i = 0; i < rainColumns.length; i++) {
+                    const col = rainColumns[i];
+
+                    // Use complementary color with varying opacity
+                    rainCtx.fillStyle =
+                        rainColor +
+                        Math.floor(col.opacity * 255)
+                            .toString(16)
+                            .padStart(2, "0");
+                    rainCtx.fillText(col.char, col.x, col.y);
+
+                    // Move drop
+                    col.y += col.speed;
+
+                    // Randomly change character
+                    if (Math.random() > 0.95) {
+                        col.char =
+                            rainChars[
+                                Math.floor(Math.random() * rainChars.length)
+                            ];
+                    }
+
+                    // Reset when off screen
+                    if (col.y > rainCanvas.height) {
+                        col.y = -fontSize;
+                        col.speed = 0.5 + Math.random() * 1.5;
+                        col.char =
+                            rainChars[
+                                Math.floor(Math.random() * rainChars.length)
+                            ];
+                    }
+                }
+            }
+
+            // Initialize rain on load
+            initRain();
+            window.addEventListener("resize", initRain);
+
+            // --- GAME LOGIC ---
+            const START_SPEED = 9.5;
+            const MAX_SPEED = 33;
+            let currentSpeed = START_SPEED;
+            let playerColor = "#00ffff";
+            const player = {
+                x: 0,
+                y: 0,
+                radius: 10,
+                targetX: 0,
+                trail: [],
+                shieldActive: false,
+                warpActive: false,
+                slowMoActive: false,
+            };
+
+            const LEVEL_THRESHOLDS = [0, 20, 50, 100, 200, 500, 1000];
+            function getLevelFromScore(s) {
+                for (let i = LEVEL_THRESHOLDS.length - 1; i >= 0; i--) {
+                    if (s >= LEVEL_THRESHOLDS[i]) return i + 1;
+                }
+                return 1;
+            }
+
+            function checkLevelUp() {
+                const newLevel = getLevelFromScore(score);
+                if (newLevel > currentLevel) {
+                    currentLevel = newLevel;
+                    levelIndicatorEl.textContent = `LEVEL ${currentLevel}`;
+                    levelBreakEl.style.display = "block";
+                    setTimeout(
+                        () => (levelBreakEl.style.display = "none"),
+                        2000,
+                    );
+                    backgroundHue += 60;
+                    const bonus = currentLevel * 50;
+                    currency += bonus;
+                    saveData();
+                    updateCurrencyDisplay();
+
+                    // Update background theme for new level
+                    updateBackgroundTheme(currentLevel);
+
+                    // Haptic feedback for level up
+                    triggerHaptic([100, 50, 100, 50, 200]);
+                }
+            }
+
+            function updateBackgroundTheme(level) {
+                starfield.className = `level-${Math.min(level, 7)}`;
+            }
+
+            function initBoosters() {
+                boosterBarEl.innerHTML = "";
+                activeBoosterSlots = [];
+                if (boosters.slowmo > 0)
+                    addBoosterSlot("slowmo", "⏱️", boosters.slowmo, "cyan");
+                if (boosters.shield > 0)
+                    addBoosterSlot("shield", "🛡️", boosters.shield, "white");
+                if (boosters.warp > 0)
+                    addBoosterSlot("warp", "⚡", boosters.warp, "yellow");
+            }
+
+            function addBoosterSlot(type, icon, count, glowColor) {
+                const slot = document.createElement("div");
+                slot.className = "booster-slot";
+                slot.dataset.type = type;
+                slot.innerHTML = `${icon}<span class="count">${count}</span><div class="active-indicator"></div>`;
+                slot.onclick = (e) => {
+                    e.stopPropagation();
+                    if (gameState === "playing") activateBooster(type, slot);
+                };
+                boosterBarEl.appendChild(slot);
+                activeBoosterSlots.push({ type, element: slot });
+            }
+
+            function activateBooster(type, element) {
+                if (boosterCooldowns[type] || gameState !== "playing") return;
+
+                if (type === "slowmo" && boosters.slowmo > 0) {
+                    boosters.slowmo--;
+                    player.slowMoActive = true;
+                    element.classList.add("active");
+                    element.style.borderColor = "#00ffff";
+                    element.style.boxShadow = "0 0 20px #00ffff";
+                    element.querySelector(".count").textContent =
+                        boosters.slowmo;
+                    setTimeout(() => {
+                        player.slowMoActive = false;
+                        element.classList.remove("active");
+                        element.style.borderColor = "";
+                        element.style.boxShadow = "";
+                        startCooldown(type, element, 5);
+                    }, 3000);
+                } else if (type === "shield" && boosters.shield > 0) {
+                    boosters.shield--;
+                    player.shieldActive = true;
+                    element.classList.add("active");
+                    element.style.borderColor = "#ffffff";
+                    element.style.boxShadow = "0 0 20px #ffffff";
+                    element.querySelector(".count").textContent =
+                        boosters.shield;
+                    // Shield stays active until used
+                } else if (type === "warp" && boosters.warp > 0) {
+                    boosters.warp--;
+                    player.warpActive = true;
+                    element.classList.add("active");
+                    element.style.borderColor = "#ffd700";
+                    element.style.boxShadow = "0 0 20px #ffd700";
+                    element.querySelector(".count").textContent = boosters.warp;
+                    // Warp stays active until used
+                }
+                if (boosters[type] === 0) element.style.display = "none";
+                saveData();
+                updateShopDisplay();
+            }
+
+            function startCooldown(type, element, seconds) {
+                boosterCooldowns[type] = true;
+                element.classList.add("cooldown");
+                setTimeout(() => {
+                    boosterCooldowns[type] = false;
+                    element.classList.remove("cooldown");
+                }, seconds * 1000);
+            }
+
+            function resetPlayer() {
+                player.y = window.innerHeight - 200;
+                player.targetX = window.innerWidth / 2 - 100;
+                player.x = player.targetX;
+                player.trail = [];
+                player.shieldActive = false;
+                player.warpActive = false;
+                player.slowMoActive = false;
+            }
+
+            let wallSegments = [],
+                gaps = [],
+                gridOffset = 0;
+            const DIVIDER_WIDTH = 28;
+
+            const CENTER_X = () => canvas.width / 2;
+            const WALL_LEFT = () => CENTER_X() - DIVIDER_WIDTH / 2;
+            const WALL_RIGHT = () => CENTER_X() + DIVIDER_WIDTH / 2;
+
+            function initWall() {
+                wallSegments = [];
+                gaps = [];
+                addSegment(-400);
+                addSegment(-1000);
+                addSegment(-1600);
+            }
+
+            function addSegment(y) {
+                const h = 300;
+                const gapH = 200;
+                wallSegments.push({ y: y, height: h });
+                gaps.push({
+                    y: y - gapH,
+                    height: gapH,
+                    x: WALL_LEFT(),
+                    width: DIVIDER_WIDTH,
+                    passed: false,
+                });
+            }
+
+            function startGame() {
+                initAudio();
+                loadData();
+                initBoosters();
+                gameState = "playing";
+                hub.style.display = "none";
+                gameOverEl.style.display = "none";
+                updateFilter(false);
+                score = 0;
+                currentLevel = 1;
+                levelIndicatorEl.textContent = "LEVEL 1";
+                currentSpeed = START_SPEED;
+                scoreEl.textContent = "0";
+                resetPlayer();
+                initWall();
+            }
+
+            function triggerGameOver() {
+                if (player.shieldActive) {
+                    player.shieldActive = false;
+                    const slot = activeBoosterSlots.find(
+                        (s) => s.type === "shield",
+                    );
+                    if (slot) {
+                        slot.element.classList.remove("active");
+                        slot.element.style.borderColor = "";
+                        slot.element.style.boxShadow = "";
+                        startCooldown("shield", slot.element, 5);
+                    }
+                    // Visual feedback for shield activation
+                    triggerScreenShake(5, 200);
+                    return;
+                }
+
+                // Screen shake on death
+                triggerScreenShake(15, 600);
+
+                gameState = "gameover";
+                updateFilter(true);
+
+                const earned = Math.floor(
+                    score * 10 * (1 + currentLevel * 0.2),
+                );
+                currency += earned;
+                saveData();
+                updateCurrencyDisplay();
+
+                document.getElementById("finalScore").textContent = score;
+                document.getElementById("earnedCurrency").textContent = earned;
+                gameOverEl.style.display = "block";
+
+                if (score > highScore) {
+                    highScore = score;
+                    localStorage.setItem("neonGapHighScore", highScore);
+                    document.getElementById("highScoreText").textContent =
+                        highScore;
+                }
+            }
+
+            function handleInput(side) {
+                if (gameState === "playing") {
+                    player.targetX =
+                        side === "left"
+                            ? window.innerWidth / 2 - 100
+                            : window.innerWidth / 2 + 100;
+                } else if (gameState === "gameover") {
+                    hub.style.display = "block";
+                    gameOverEl.style.display = "none";
+                    gameState = "menu";
+                }
+            }
+
+            document
+                .getElementById("playBtn")
+                .addEventListener("click", startGame);
+            document
+                .getElementById("toggleAudio")
+                .addEventListener("click", () => {
+                    const m = document.getElementById("audioMenu");
+                    const s = document.getElementById("shopMenu");
+                    s.style.display = "none";
+                    m.style.display =
+                        m.style.display === "block" ? "none" : "block";
+                });
+            document
+                .getElementById("toggleShop")
+                .addEventListener("click", () => {
+                    const s = document.getElementById("shopMenu");
+                    const m = document.getElementById("audioMenu");
+                    m.style.display = "none";
+                    s.style.display =
+                        s.style.display === "block" ? "none" : "block";
+                    if (s.style.display === "block") updateShopDisplay();
+                });
+            document
+                .getElementById("volumeSlider")
+                .addEventListener(
+                    "input",
+                    (e) => (musicPlayer.volume = e.target.value / 100),
+                );
+
+            // Haptic toggle
+            document
+                .getElementById("hapticToggle")
+                .addEventListener("click", () => {
+                    hapticEnabled = !hapticEnabled;
+                    saveData();
+                    updateHapticToggle();
+                    // Test haptic when enabling
+                    if (hapticEnabled) triggerHaptic(50);
+                });
+
+            ["mousedown", "touchstart"].forEach((evt) => {
+                document
+                    .getElementById("leftZone")
+                    .addEventListener(evt, (e) => {
+                        e.preventDefault();
+                        handleInput("left");
+                    });
+                document
+                    .getElementById("rightZone")
+                    .addEventListener(evt, (e) => {
+                        e.preventDefault();
+                        handleInput("right");
+                    });
+            });
+
+            document.addEventListener("keydown", (e) => {
+                const key = e.key.toLowerCase();
+                if (key === "arrowleft" || key === "a") handleInput("left");
+                if (key === "arrowright" || key === "d") handleInput("right");
+
+                if ((key === " " || key === "enter") && gameState === "menu") {
+                    startGame();
+                }
+
+                if (gameState === "playing") {
+                    if (key === "1") {
+                        const b = activeBoosterSlots.find(
+                            (s) => s.type === "slowmo",
+                        );
+                        if (b) activateBooster("slowmo", b.element);
+                    }
+                    if (key === "2") {
+                        const b = activeBoosterSlots.find(
+                            (s) => s.type === "shield",
+                        );
+                        if (b) activateBooster("shield", b.element);
+                    }
+                    if (key === "3") {
+                        const b = activeBoosterSlots.find(
+                            (s) => s.type === "warp",
+                        );
+                        if (b) activateBooster("warp", b.element);
+                    }
+                }
+
+                if (
+                    gameState === "gameover" &&
+                    (key === " " || key === "enter" || key === "escape")
+                ) {
+                    handleInput(); // Go back to menu
+                }
+            });
+
+            function updateWall() {
+                const speed = player.slowMoActive
+                    ? currentSpeed * 0.5
+                    : currentSpeed;
+
+                for (let i = 0; i < wallSegments.length; i++) {
+                    wallSegments[i].y += speed;
+                }
+                for (let i = 0; i < gaps.length; i++) {
+                    gaps[i].y += speed;
+                }
+
+                if (wallSegments.length > 0) {
+                    const firstSeg = wallSegments[0];
+                    if (firstSeg.y > canvas.height + 50) {
+                        wallSegments.shift();
+                        score++;
+                        scoreEl.textContent = score;
+                        checkLevelUp();
+                        const levelMultiplier = 1 + currentLevel * 0.1;
+                        const targetSpeed = Math.min(
+                            MAX_SPEED,
+                            START_SPEED * levelMultiplier + score * 0.05,
+                        );
+                        currentSpeed += (targetSpeed - currentSpeed) * 0.02;
+                    }
+                }
+
+                while (gaps.length > 0 && gaps[0].y > canvas.height + 50) {
+                    gaps.shift();
+                }
+
+                if (wallSegments.length > 0) {
+                    const topSeg = wallSegments[wallSegments.length - 1];
+                    if (topSeg.y > -500) {
+                        const lastSeg = wallSegments[wallSegments.length - 1];
+                        const gapHeight = 150 + Math.random() * 50;
+                        const wallHeight = 250 + Math.random() * 150;
+                        const levelShrink = Math.min(40, currentLevel * 5);
+
+                        gaps.push({
+                            y: lastSeg.y - gapHeight,
+                            height: Math.max(80, gapHeight - levelShrink),
+                            x: WALL_LEFT(),
+                            width: DIVIDER_WIDTH,
+                            passed: false,
+                        });
+                        wallSegments.push({
+                            y: lastSeg.y - gapHeight - wallHeight,
+                            height: wallHeight,
+                            passed: false,
+                        });
+                    }
+                }
+            }
+
+            function checkCollisions() {
+                const playerLeft = player.x - player.radius;
+                const playerRight = player.x + player.radius;
+                const playerTop = player.y - player.radius;
+                const playerBottom = player.y + player.radius;
+                const playerCenterY = (playerTop + playerBottom) / 2;
+
+                const wallL = WALL_LEFT();
+                const wallR = WALL_RIGHT();
+
+                if (playerRight > wallL && playerLeft < wallR) {
+                    let hittingWall = false;
+                    for (let seg of wallSegments) {
+                        const segTop = seg.y;
+                        const segBottom = seg.y + seg.height;
+                        if (
+                            playerBottom > segTop + 5 &&
+                            playerTop < segBottom - 5
+                        ) {
+                            hittingWall = true;
+                            break;
+                        }
+                    }
+
+                    if (hittingWall) {
+                        triggerGameOver();
+                    }
+                }
+
+                for (let gap of gaps) {
+                    const gapTop = gap.y;
+                    const gapBottom = gap.y + gap.height;
+
+                    if (
+                        !gap.passed &&
+                        gapTop < playerCenterY &&
+                        gapBottom > playerCenterY
+                    ) {
+                        const playerInGapHorizontally =
+                            playerLeft < WALL_RIGHT() &&
+                            playerRight > WALL_LEFT();
+                        if (playerInGapHorizontally) {
+                            if (
+                                playerCenterY > gapTop + 10 &&
+                                playerCenterY < gapBottom - 10
+                            ) {
+                                gap.passed = true;
+                                // Haptic feedback for successful gap pass
+                                triggerHaptic(30);
+                            } else {
+                                triggerGameOver();
+                            }
+                        }
+                    }
+
+                    if (!gap.passed && gapTop > playerCenterY + 50) {
+                        triggerGameOver();
+                    }
+                }
+            }
+
+            // --- ENGINE ---
+            function update() {
+                if (gameState !== "playing") return;
+
+                updateWall();
+                updateScreenShake();
+
+                if (player.warpActive && gaps.length > 0) {
+                    const nextGap = gaps.find(
+                        (g) => g.y < player.y && !g.passed,
+                    );
+                    if (nextGap && nextGap.y > player.y - 200) {
+                        const gapCenter = nextGap.x + nextGap.width / 2;
+                        player.targetX =
+                            gapCenter < CENTER_X()
+                                ? CENTER_X() - 100
+                                : CENTER_X() + 100;
+                        player.warpActive = false;
+                        const slot = activeBoosterSlots.find(
+                            (s) => s.type === "warp",
+                        );
+                        if (slot) {
+                            slot.element.classList.remove("active");
+                            slot.element.style.borderColor = "";
+                            slot.element.style.boxShadow = "";
+                            startCooldown("warp", slot.element, 3);
+                        }
+                    }
+                }
+
+                player.x +=
+                    (player.targetX - player.x) *
+                    (player.slowMoActive ? 0.2 : 0.12);
+
+                player.glowIntensity = Math.sin(Date.now() * 0.01) * 0.5 + 0.5;
+
+                gridOffset += player.slowMoActive
+                    ? currentSpeed * 0.5
+                    : currentSpeed;
+                if (gridOffset > 40) gridOffset = 0;
+
+                backgroundHue = (backgroundHue + 0.1) % 360;
+
+                checkCollisions();
+            }
+
+            function draw() {
+                // Clear canvas completely (transparent)
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Apply screen shake offset
+                ctx.save();
+                ctx.translate(screenShakeOffset.x, screenShakeOffset.y);
+
+                const hue = backgroundHue;
+                const levelHueShift = (currentLevel - 1) * 30;
+
+                // Very subtle overlay for atmosphere
+                const gradient = ctx.createLinearGradient(
+                    0,
+                    0,
+                    0,
+                    canvas.height,
+                );
+                gradient.addColorStop(
+                    0,
+                    `hsla(${hue + levelHueShift}, 70%, 5%, 0.1)`,
+                );
+                gradient.addColorStop(
+                    0.5,
+                    `hsla(${hue + 40 + levelHueShift}, 60%, 10%, 0.05)`,
+                );
+                gradient.addColorStop(
+                    1,
+                    `hsla(${hue + 80 + levelHueShift}, 50%, 15%, 0.1)`,
+                );
+                ctx.fillStyle = gradient;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.strokeStyle = `hsla(${hue}, 50%, 30%, 0.2)`;
+                ctx.lineWidth = 1;
+                for (let i = -20; i <= 20; i++) {
+                    const x = CENTER_X() + i * 80;
+                    ctx.beginPath();
+                    ctx.moveTo(CENTER_X(), 0);
+                    ctx.lineTo(x, canvas.height);
+                    ctx.stroke();
+                }
+                for (let i = 0; i < canvas.height / 40 + 2; i++) {
+                    const y =
+                        ((i * 40 + gridOffset) % (canvas.height + 40)) - 20;
+                    ctx.beginPath();
+                    ctx.moveTo(0, y);
+                    ctx.lineTo(canvas.width, y);
+                    ctx.stroke();
+                }
+
+                const time = Date.now() * 0.002;
+
+                gaps.forEach((gap, index) => {
+                    const pulse = Math.sin(time + index) * 0.3 + 0.7;
+                    ctx.shadowBlur = 30 * pulse;
+                    ctx.shadowColor = `hsla(${hue + 180}, 100%, 70%, ${pulse})`;
+                    ctx.strokeStyle = `hsla(${hue + 180}, 100%, 90%, ${pulse})`;
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.moveTo(gap.x - 5, gap.y);
+                    ctx.lineTo(gap.x + gap.width + 5, gap.y);
+                    ctx.stroke();
+                    ctx.beginPath();
+                    ctx.moveTo(gap.x - 5, gap.y + gap.height);
+                    ctx.lineTo(gap.x + gap.width + 5, gap.y + gap.height);
+                    ctx.stroke();
+                    ctx.shadowBlur = 0;
+
+                    ctx.strokeStyle = `hsla(${hue + 180}, 100%, 70%, 0.6)`;
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.moveTo(gap.x, gap.y);
+                    ctx.lineTo(gap.x, gap.y + gap.height);
+                    ctx.moveTo(gap.x + gap.width, gap.y);
+                    ctx.lineTo(gap.x + gap.width, gap.y + gap.height);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    const gapGradient = ctx.createLinearGradient(
+                        gap.x,
+                        gap.y,
+                        gap.x,
+                        gap.y + gap.height,
+                    );
+                    gapGradient.addColorStop(
+                        0,
+                        `hsla(${hue + 180}, 100%, 60%, 0)`,
+                    );
+                    gapGradient.addColorStop(
+                        0.5,
+                        `hsla(${hue + 180}, 100%, 60%, 0.15)`,
+                    );
+                    gapGradient.addColorStop(
+                        1,
+                        `hsla(${hue + 180}, 100%, 60%, 0)`,
+                    );
+                    ctx.fillStyle = gapGradient;
+                    ctx.fillRect(gap.x, gap.y, gap.width, gap.height);
+                });
+
+                ctx.fillStyle = `hsla(${hue + 180}, 90%, 55%, 1)`;
+                ctx.shadowBlur = 25;
+                ctx.shadowColor = `hsla(${hue + 180}, 100%, 70%, 1)`;
+                wallSegments.forEach((seg) => {
+                    if (seg.height > 0) {
+                        ctx.fillRect(
+                            WALL_LEFT(),
+                            seg.y,
+                            DIVIDER_WIDTH,
+                            seg.height,
+                        );
+                        ctx.fillStyle = `hsla(${hue + 180}, 100%, 85%, 1)`;
+                        ctx.fillRect(WALL_LEFT() + 10, seg.y, 8, seg.height);
+                        ctx.fillStyle = `hsla(${hue + 180}, 90%, 55%, 1)`;
+                    }
+                });
+                ctx.shadowBlur = 0;
+
+                const skin = skins[selectedSkin];
+                player.trail.push({ x: player.x, y: player.y });
+                if (player.trail.length > 10) player.trail.shift();
+                player.trail.forEach((t, i) => {
+                    const alpha = (i / player.trail.length) * 0.6;
+                    ctx.fillStyle = `${skin.trail} ${alpha})`;
+                    ctx.beginPath();
+                    ctx.arc(t.x, t.y, 8, 0, Math.PI * 2);
+                    ctx.fill();
+                });
+
+                if (player.shieldActive) {
+                    ctx.shadowBlur = 40;
+                    ctx.shadowColor = "#ffffff";
+                    ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(player.x, player.y, 18, 0, Math.PI * 2);
+                    ctx.stroke();
+                    // Pulsing shield effect
+                    const shieldPulse = Math.sin(Date.now() * 0.01) * 0.3 + 0.7;
+                    ctx.fillStyle = `rgba(255, 255, 255, ${0.1 * shieldPulse})`;
+                    ctx.fill();
+                }
+
+                if (player.slowMoActive) {
+                    ctx.fillStyle = "rgba(0, 255, 255, 0.05)";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                    // Time bend visual effect
+                    ctx.strokeStyle = "rgba(0, 255, 255, 0.3)";
+                    ctx.lineWidth = 1;
+                    for (let i = 0; i < 5; i++) {
+                        ctx.beginPath();
+                        ctx.arc(
+                            player.x,
+                            player.y,
+                            30 + i * 10,
+                            0,
+                            Math.PI * 2,
+                        );
+                        ctx.stroke();
+                    }
+                }
+
+                if (player.warpActive) {
+                    // Phase warp visual effect
+                    ctx.strokeStyle = "rgba(255, 215, 0, 0.5)";
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 5]);
+                    ctx.beginPath();
+                    ctx.arc(player.x, player.y, 25, 0, Math.PI * 2);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+                }
+
+                const glowSize = 25 + (player.glowIntensity || 0) * 15;
+                ctx.shadowBlur = glowSize;
+                ctx.shadowColor = skin.glow;
+                ctx.fillStyle = skin.color + "4d";
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, 14, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.fillStyle = skin.color;
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, 10, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.shadowBlur = 10;
+                ctx.fillStyle = "#ffffff";
+                ctx.beginPath();
+                ctx.arc(player.x, player.y, 4, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+
+                ctx.restore();
+            }
+
+            function loop() {
+                update();
+                draw();
+                drawRain(); // Draw digital rain overlay
+                requestAnimationFrame(loop);
+            }
+
+            loadData();
+            loop();
+        </script>
+    </body>
+</html>
