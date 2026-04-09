@@ -988,12 +988,15 @@
             const canvas = document.getElementById("gameCanvas");
             const ctx = canvas.getContext("2d");
 
-            // Mobile canvas setup with DPR scaling
+            // Mobile canvas setup - use CSS pixel coordinates for gameplay
             function setupGameCanvas() {
                 const rect = canvas.getBoundingClientRect();
-                canvas.width = rect.width * dpr;
-                canvas.height = rect.height * dpr;
-                ctx.scale(dpr, dpr);
+                // Use CSS pixel dimensions for canvas (not multiplied by DPR)
+                // This ensures coordinates match touch/mouse positions
+                canvas.width = rect.width;
+                canvas.height = rect.height;
+                // Don't scale context - use CSS pixels directly
+                // DPR scaling is handled by the browser automatically
             }
             const starfield = document.getElementById("starfield");
             const scoreEl = document.getElementById("score");
@@ -1402,11 +1405,10 @@
             let rainDrops = [];
 
             function initRain() {
-                // Scale for high-DPI displays
+                // Use CSS pixel dimensions
                 const rect = rainCanvas.getBoundingClientRect();
-                rainCanvas.width = rect.width * dpr;
-                rainCanvas.height = rect.height * dpr;
-                rainCtx.scale(dpr, dpr);
+                rainCanvas.width = rect.width;
+                rainCanvas.height = rect.height;
                 const columns = Math.floor(rainCanvas.width / fontSize);
                 rainColumns = [];
                 rainDrops = [];
@@ -1642,7 +1644,9 @@
             }
 
             function startGame() {
+                console.log("[Game] Starting game...");
                 initAudio();
+                unlockAudioContext(); // Ensure audio is unlocked on game start
                 loadData();
                 initBoosters();
                 gameState = "playing";
@@ -1816,6 +1820,7 @@
                     ? currentSpeed * 0.5
                     : currentSpeed;
 
+                // Move walls and gaps
                 for (let i = 0; i < wallSegments.length; i++) {
                     wallSegments[i].y += speed;
                 }
@@ -1823,6 +1828,7 @@
                     gaps[i].y += speed;
                 }
 
+                // Remove off-screen walls and increment score
                 if (wallSegments.length > 0) {
                     const firstSeg = wallSegments[0];
                     if (firstSeg.y > canvas.height + 50) {
@@ -1839,31 +1845,41 @@
                     }
                 }
 
+                // Remove off-screen gaps
                 while (gaps.length > 0 && gaps[0].y > canvas.height + 50) {
                     gaps.shift();
                 }
 
-                if (wallSegments.length > 0) {
-                    const topSeg = wallSegments[wallSegments.length - 1];
-                    if (topSeg.y > -500) {
-                        const lastSeg = wallSegments[wallSegments.length - 1];
-                        const gapHeight = 150 + Math.random() * 50;
-                        const wallHeight = 250 + Math.random() * 150;
-                        const levelShrink = Math.min(40, currentLevel * 5);
+                // Generate new walls/gaps when needed
+                // Check if we need to generate more walls (keep at least 3 ahead)
+                const topWall = wallSegments[wallSegments.length - 1];
+                const topGap = gaps[gaps.length - 1];
 
-                        gaps.push({
-                            y: lastSeg.y - gapHeight,
-                            height: Math.max(80, gapHeight - levelShrink),
-                            x: WALL_LEFT(),
-                            width: DIVIDER_WIDTH,
-                            passed: false,
-                        });
-                        wallSegments.push({
-                            y: lastSeg.y - gapHeight - wallHeight,
-                            height: wallHeight,
-                            passed: false,
-                        });
-                    }
+                // Generate new segments if top wall is getting close to player
+                if (!topWall || topWall.y > -800) {
+                    const lastSeg =
+                        wallSegments.length > 0
+                            ? wallSegments[wallSegments.length - 1]
+                            : { y: -400, height: 300 };
+                    const gapHeight = 150 + Math.random() * 50;
+                    const wallHeight = 250 + Math.random() * 150;
+                    const levelShrink = Math.min(40, currentLevel * 5);
+
+                    // Add new gap
+                    gaps.push({
+                        y: lastSeg.y - gapHeight,
+                        height: Math.max(80, gapHeight - levelShrink),
+                        x: WALL_LEFT(),
+                        width: DIVIDER_WIDTH,
+                        passed: false,
+                    });
+
+                    // Add new wall segment
+                    wallSegments.push({
+                        y: lastSeg.y - gapHeight - wallHeight,
+                        height: wallHeight,
+                        passed: false,
+                    });
                 }
             }
 
@@ -1877,15 +1893,17 @@
                 const wallL = WALL_LEFT();
                 const wallR = WALL_RIGHT();
 
-                if (playerRight > wallL && playerLeft < wallR) {
+                // Check if player is horizontally within the wall area
+                const playerInWallArea =
+                    playerRight > wallL && playerLeft < wallR;
+
+                if (playerInWallArea) {
                     let hittingWall = false;
                     for (let seg of wallSegments) {
                         const segTop = seg.y;
                         const segBottom = seg.y + seg.height;
-                        if (
-                            playerBottom > segTop + 5 &&
-                            playerTop < segBottom - 5
-                        ) {
+                        // Check if player vertically overlaps with wall segment
+                        if (playerBottom > segTop && playerTop < segBottom) {
                             hittingWall = true;
                             break;
                         }
@@ -1893,37 +1911,40 @@
 
                     if (hittingWall) {
                         triggerGameOver();
+                        return; // Exit early on death
                     }
                 }
 
+                // Check gaps
+                let passedThroughGap = false;
                 for (let gap of gaps) {
                     const gapTop = gap.y;
                     const gapBottom = gap.y + gap.height;
 
-                    if (
-                        !gap.passed &&
-                        gapTop < playerCenterY &&
-                        gapBottom > playerCenterY
-                    ) {
-                        const playerInGapHorizontally =
-                            playerLeft < WALL_RIGHT() &&
-                            playerRight > WALL_LEFT();
-                        if (playerInGapHorizontally) {
-                            if (
-                                playerCenterY > gapTop + 10 &&
-                                playerCenterY < gapBottom - 10
-                            ) {
+                    // Check if player is vertically within a gap
+                    if (playerCenterY > gapTop && playerCenterY < gapBottom) {
+                        // Check if player is horizontally within the gap
+                        if (playerInWallArea) {
+                            passedThroughGap = true;
+                            if (!gap.passed) {
                                 gap.passed = true;
-                                // Haptic feedback for successful gap pass
                                 triggerHaptic(30);
-                            } else {
-                                triggerGameOver();
                             }
                         }
                     }
+                }
 
-                    if (!gap.passed && gapTop > playerCenterY + 50) {
-                        triggerGameOver();
+                // If player is in wall area but not passing through any gap, they hit the wall
+                if (playerInWallArea && !passedThroughGap) {
+                    // Check if there's a wall at player's position
+                    for (let seg of wallSegments) {
+                        if (
+                            playerBottom > seg.y &&
+                            playerTop < seg.y + seg.height
+                        ) {
+                            triggerGameOver();
+                            return;
+                        }
                     }
                 }
             }
@@ -1975,12 +1996,8 @@
             }
 
             function draw() {
-                // Clear canvas (don't reset width/height, just clear)
+                // Clear canvas completely
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                // Save context for DPR scaling
-                ctx.save();
-                ctx.scale(dpr, dpr);
 
                 // Apply screen shake offset
                 ctx.save();
@@ -2186,6 +2203,60 @@
             setupGameCanvas();
             loadData();
             loop();
+
+            // Unlock audio on first user interaction (required for mobile)
+            const unlockEvents = [
+                "touchstart",
+                "touchend",
+                "mousedown",
+                "keydown",
+            ];
+            function unlockAudioHandler(e) {
+                console.log("[Audio] User interaction detected:", e.type);
+                unlockAudioContext();
+                // Remove listeners after first interaction
+                unlockEvents.forEach((event) => {
+                    document.removeEventListener(event, unlockAudioHandler);
+                });
+            }
+            unlockEvents.forEach((event) => {
+                document.addEventListener(event, unlockAudioHandler, {
+                    passive: false,
+                });
+            });
+
+            // Handle page visibility changes (resume audio when tab becomes active)
+            document.addEventListener("visibilitychange", () => {
+                console.log(
+                    "[Audio] Visibility changed:",
+                    document.visibilityState,
+                );
+                if (document.visibilityState === "visible") {
+                    // Page became visible - try to resume audio if it was interrupted
+                    if (
+                        audioCtx &&
+                        (audioCtx.state === "suspended" ||
+                            audioCtx.state === "interrupted")
+                    ) {
+                        console.log(
+                            "[Audio] Resuming after visibility change...",
+                        );
+                        audioCtx
+                            .resume()
+                            .then(() => {
+                                console.log(
+                                    "[Audio] Resumed successfully after visibility change",
+                                );
+                            })
+                            .catch((err) => {
+                                console.error(
+                                    "[Audio] Failed to resume after visibility change:",
+                                    err,
+                                );
+                            });
+                    }
+                }
+            });
         </script>
     </body>
 </html>
