@@ -1554,7 +1554,7 @@
             window.addEventListener("resize", initRain);
          
             // --- GAME LOGIC ---
-            const START_SPEED = 9.5;
+            const START_SPEED = 5.5;
             const MAX_SPEED = 33;
             let currentSpeed = START_SPEED;
             let playerColor = "#00ffff";
@@ -1789,8 +1789,8 @@
                 if (gameState === "playing") {
                     player.targetX =
                         side === "left"
-                            ? canvas.width / 2 - 80
-                            : canvas.width / 2 + 80;
+                            ? canvas.width - 80
+                            : canvas.width + 80;
                 } else if (gameState === "gameover") {
                     hub.style.display = "block";
                     gameOverEl.style.display = "none";
