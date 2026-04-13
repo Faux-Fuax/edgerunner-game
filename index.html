@@ -1244,9 +1244,10 @@
                 "music5.mp3",
                 "music6.mp3",
                 "music7.mp3",
+                "music8.mp3",
             ];
             // Tracks 5-8 (indices 4-7) are locked until player reaches certain levels
-            const trackLevelRequirements = [0, 0, 0, 0, 3, 4, 5, 6]; // Level required to unlock each track
+            const trackLevelRequirements = [0, 0, 0, 0, 3, 4, 5, 6, 7]; // Level required to unlock each track
             let enabledTracks =
                 JSON.parse(localStorage.getItem("neonGapEnabledTracks")) ||
                 playlist.map(() => true);
