@@ -12,7 +12,7 @@
                 margin: 0;
                 padding: 0;
                 box-sizing: border-box;
-                touch-action: none;
+                touch-action: manipulation;
                 user-select: none;
                 -webkit-user-select: none;
             }
@@ -160,7 +160,7 @@
                 --shape-color: #ffff00;
             }
 
-            /* Central Menu Hub */
+            /* Central Menu Hub - Mobile scrollable */
             #centralHub {
                 position: absolute;
                 top: 50%;
@@ -175,6 +175,10 @@
                 text-align: center;
                 width: 90%;
                 max-width: 400px;
+                max-height: 90vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                touch-action: pan-y;
             }
 
             #topLeft {
@@ -231,9 +235,11 @@
                 margin-top: 20px;
                 border-top: 1px solid #333;
                 padding-top: 20px;
-                max-height: 300px;
+                max-height: 40vh;
                 overflow-y: auto;
                 -webkit-overflow-scrolling: touch;
+                overscroll-behavior: contain;
+                touch-action: pan-y;
             }
 
             .shop-item {
@@ -789,6 +795,11 @@
             }
             .track-locked::after {
                 content: " 🔒";
+            }
+            
+            /* Touch zones - no scroll */
+            #leftZone, #rightZone, #gameCanvas {
+                touch-action: none;
             }
         </style>
         <base target="_blank" />
@@ -1540,7 +1551,7 @@
             // Initialize rain on load
             initRain();
             window.addEventListener("resize", initRain);
-
+         
             // --- GAME LOGIC ---
             const START_SPEED = 9.5;
             const MAX_SPEED = 33;
