@@ -44,7 +44,9 @@
                 position: absolute;
                 top: 0;
                 left: 0;
-                z-index: 10;
+                width: 100%;
+                height: 100%;
+                z-index: 100;
                 display: block;
             }
 
@@ -169,7 +171,7 @@
                 box-shadow: 0 0 20px #00ffff;
                 padding: 30px;
                 color: #00ffff;
-                z-index: 100;
+                z-index: 200;
                 text-align: center;
                 width: 90%;
                 max-width: 400px;
@@ -182,7 +184,7 @@
                 text-align: left;
                 color: #00ffff;
                 text-shadow: 0 0 10px #00ffff;
-                z-index: 15;
+                z-index: 150;
             }
 
             #currency {
@@ -192,7 +194,7 @@
                 color: #ffd700;
                 font-size: 18px;
                 text-shadow: 0 0 10px #ffd700;
-                z-index: 15;
+                z-index: 150;
             }
 
             #levelIndicator {
@@ -306,7 +308,7 @@
                 transform: translateX(-50%);
                 display: flex;
                 gap: 10px;
-                z-index: 10;
+                z-index: 150;
             }
             .booster-slot {
                 width: 45px;
@@ -381,7 +383,7 @@
                 color: #ff00ff;
                 text-shadow: 0 0 30px #ff00ff;
                 display: none;
-                z-index: 110;
+                z-index: 200;
                 pointer-events: none;
                 animation: levelPulse 2s ease-out;
             }
@@ -426,7 +428,7 @@
                 right: 20px;
                 color: #00ffff;
                 font-size: 32px;
-                z-index: 15;
+                z-index: 150;
                 pointer-events: none;
             }
             #gameOver {
@@ -438,7 +440,7 @@
                 font-size: 48px;
                 text-shadow: 0 0 20px #ff0040;
                 display: none;
-                z-index: 20;
+                z-index: 200;
                 text-align: center;
             }
 
@@ -503,7 +505,7 @@
                 left: 0;
                 width: 100vw;
                 height: 100dvh;
-                z-index: 5;
+                z-index: 1;
                 pointer-events: none;
                 opacity: 0.3;
                 mix-blend-mode: screen;
@@ -779,8 +781,16 @@
                 --building-color: #2e0b2e;
                 --window-color: rgba(255, 0, 255, 0.3);
             }
+
+            /* Track locked styling */
+            .track-locked {
+                opacity: 0.5;
+                cursor: not-allowed;
+            }
+            .track-locked::after {
+                content: " 🔒";
+            }
         </style>
-        <base target="_blank" />
         <base target="_blank" />
     </head>
     <body>
@@ -848,8 +858,9 @@
             </h1>
 
             <div id="instructions">
-                <p>ARROWS or TAP → Move</p>
-                <p>SPACE or DEPLOY → Start</p>
+                <p>TAP Right → Move Right</p>
+                <p>TAP Left → Move Left</p>
+                <p>DEPLOY = Start</p>
                 <p>DONT MISS THE GAPS!</p>
                 <p style="font-size: 10px; margin-top: 5px; color: #888">
                     Hotkeys: [1][2][3] for Boosters
@@ -937,7 +948,7 @@
         </div>
 
         <div id="gameOver">
-            CRITICAL FAILURE
+            "The only omes who know where the edge is, is those who go over."
             <p style="font-size: 20px; color: #00ffff; margin-top: 10px">
                 Score: <span id="finalScore">0</span>
             </p>
@@ -968,7 +979,7 @@
                 top: 0;
                 width: 50%;
                 height: 100%;
-                z-index: 5;
+                z-index: 50;
             "
         ></div>
         <div
@@ -979,7 +990,7 @@
                 top: 0;
                 width: 50%;
                 height: 100%;
-                z-index: 5;
+                z-index: 50;
             "
         ></div>
 
@@ -994,8 +1005,8 @@
                 const rect = canvas.getBoundingClientRect();
                 // Use CSS pixel dimensions for canvas (not multiplied by DPR)
                 // This ensures coordinates match touch/mouse positions
-                canvas.width = rect.width;
-                canvas.height = rect.height;
+                canvas.width = rect.width || window.innerWidth;
+                canvas.height = rect.height || window.innerHeight;
                 // Don't scale context - use CSS pixels directly
                 // DPR scaling is handled by the browser automatically
             }
@@ -1213,19 +1224,49 @@
             let audioInited = false;
             let masterVolume = 0.8;
             let currentTrackIndex = 0;
+            // 8 tracks total - first 4 available, tracks 5-8 unlock with levels
             const playlist = [
                 "music0.mp3",
                 "music1.mp3",
                 "music2.mp3",
                 "music3.mp3",
                 "music4.mp3",
+                "music5.mp3",
+                "music6.mp3",
+                "music7.mp3",
             ];
+            // Tracks 5-8 (indices 4-7) are locked until player reaches certain levels
+            const trackLevelRequirements = [0, 0, 0, 0, 3, 4, 5, 6]; // Level required to unlock each track
             let enabledTracks =
                 JSON.parse(localStorage.getItem("neonGapEnabledTracks")) ||
                 playlist.map(() => true);
             const musicPlayer = new Audio();
             let musicStarted = false;
             let savedTrackTime = 0;
+
+            // Unlock audio context (required for mobile browsers)
+            function unlockAudioContext() {
+                if (!audioCtx) return;
+                if (
+                    audioCtx.state === "suspended" ||
+                    audioCtx.state === "interrupted"
+                ) {
+                    console.log("[Audio] Unlocking audio context...");
+                    audioCtx
+                        .resume()
+                        .then(() => {
+                            console.log(
+                                "[Audio] Audio context unlocked successfully",
+                            );
+                        })
+                        .catch((err) => {
+                            console.error(
+                                "[Audio] Failed to unlock audio context:",
+                                err,
+                            );
+                        });
+                }
+            }
 
             function initAudio() {
                 if (audioInited) return;
@@ -1292,7 +1333,13 @@
                 currentTrackIndex = index;
                 musicPlayer.src = playlist[index];
                 musicPlayer.currentTime = startTime;
-                musicPlayer.play().catch(() => {});
+                musicPlayer.volume = masterVolume;
+                musicPlayer.play().catch((err) => {
+                    console.log(
+                        "[Audio] Play failed (may need user interaction):",
+                        err,
+                    );
+                });
 
                 musicPlayer.onended = () => {
                     let next = (currentTrackIndex + 1) % playlist.length;
@@ -1308,38 +1355,55 @@
                 };
             }
 
-            const trackListDiv = document.getElementById("trackList");
-            playlist.forEach((track, i) => {
-                const label = document.createElement("label");
-                label.innerHTML = `<input type="checkbox" ${enabledTracks[i] ? "checked" : ""} data-index="${i}"> Track ${i}`;
-                trackListDiv.appendChild(label);
-                label.querySelector("input").addEventListener("change", (e) => {
-                    enabledTracks[i] = e.target.checked;
-                    localStorage.setItem(
-                        "neonGapEnabledTracks",
-                        JSON.stringify(enabledTracks),
-                    );
-                    // If current track was disabled, skip to next
-                    if (
-                        !e.target.checked &&
-                        i === currentTrackIndex &&
-                        !musicPlayer.paused
-                    ) {
-                        let next = (i + 1) % playlist.length;
-                        let attempts = 0;
-                        while (
-                            !enabledTracks[next] &&
-                            attempts < playlist.length
-                        ) {
-                            next = (next + 1) % playlist.length;
-                            attempts++;
-                        }
-                        if (attempts < playlist.length) {
-                            loadAndPlay(next);
-                        }
+            // Build track list with level-based unlocking
+            function buildTrackList() {
+                const trackListDiv = document.getElementById("trackList");
+                trackListDiv.innerHTML = "";
+                playlist.forEach((track, i) => {
+                    const requiredLevel = trackLevelRequirements[i];
+                    const isLocked = currentLevel < requiredLevel;
+                    const label = document.createElement("label");
+                    label.className = isLocked ? "track-locked" : "";
+                    label.title = isLocked
+                        ? `Unlocks at Level ${requiredLevel}`
+                        : "";
+                    label.innerHTML = `<input type="checkbox" ${enabledTracks[i] && !isLocked ? "checked" : ""} data-index="${i}" ${isLocked ? "disabled" : ""}> Track ${i + 1}${isLocked ? ` (Lv.${requiredLevel})` : ""}`;
+                    trackListDiv.appendChild(label);
+                    if (!isLocked) {
+                        label
+                            .querySelector("input")
+                            .addEventListener("change", (e) => {
+                                enabledTracks[i] = e.target.checked;
+                                localStorage.setItem(
+                                    "neonGapEnabledTracks",
+                                    JSON.stringify(enabledTracks),
+                                );
+                                // If current track was disabled, skip to next
+                                if (
+                                    !e.target.checked &&
+                                    i === currentTrackIndex &&
+                                    !musicPlayer.paused
+                                ) {
+                                    let next = (i + 1) % playlist.length;
+                                    let attempts = 0;
+                                    while (
+                                        !enabledTracks[next] &&
+                                        attempts < playlist.length
+                                    ) {
+                                        next = (next + 1) % playlist.length;
+                                        attempts++;
+                                    }
+                                    if (attempts < playlist.length) {
+                                        loadAndPlay(next);
+                                    }
+                                }
+                            });
                     }
                 });
-            });
+            }
+
+            // Initialize track list
+            buildTrackList();
 
             function updateFilter(muffled) {
                 if (!lowPassFilter) return;
@@ -1408,8 +1472,8 @@
             function initRain() {
                 // Use CSS pixel dimensions
                 const rect = rainCanvas.getBoundingClientRect();
-                rainCanvas.width = rect.width;
-                rainCanvas.height = rect.height;
+                rainCanvas.width = rect.width || window.innerWidth;
+                rainCanvas.height = rect.height || window.innerHeight;
                 const columns = Math.floor(rainCanvas.width / fontSize);
                 rainColumns = [];
                 rainDrops = [];
@@ -1521,6 +1585,9 @@
                     // Update background theme for new level
                     updateBackgroundTheme(currentLevel);
 
+                    // Rebuild track list to unlock new tracks
+                    buildTrackList();
+
                     // Haptic feedback for level up
                     triggerHaptic([100, 50, 100, 50, 200]);
                 }
@@ -1605,8 +1672,8 @@
             }
 
             function resetPlayer() {
-                player.y = window.innerHeight - 200;
-                player.targetX = window.innerWidth / 2 - 100;
+                player.y = canvas.height - 150;
+                player.targetX = canvas.width / 2 - 80;
                 player.x = player.targetX;
                 player.trail = [];
                 player.shieldActive = false;
@@ -1626,9 +1693,11 @@
             function initWall() {
                 wallSegments = [];
                 gaps = [];
-                addSegment(-400);
-                addSegment(-1000);
-                addSegment(-1600);
+                // Create initial walls closer to player so they're visible
+                const startY = -100;
+                addSegment(startY);
+                addSegment(startY - 600);
+                addSegment(startY - 1200);
             }
 
             function addSegment(y) {
@@ -1709,8 +1778,8 @@
                 if (gameState === "playing") {
                     player.targetX =
                         side === "left"
-                            ? window.innerWidth / 2 - 100
-                            : window.innerWidth / 2 + 100;
+                            ? canvas.width / 2 - 80
+                            : canvas.width / 2 + 80;
                 } else if (gameState === "gameover") {
                     hub.style.display = "block";
                     gameOverEl.style.display = "none";
@@ -1729,6 +1798,9 @@
                     s.style.display = "none";
                     m.style.display =
                         m.style.display === "block" ? "none" : "block";
+                    if (m.style.display === "block") {
+                        buildTrackList(); // Refresh track list to show unlocks
+                    }
                 });
             document
                 .getElementById("toggleShop")
@@ -1742,10 +1814,10 @@
                 });
             document
                 .getElementById("volumeSlider")
-                .addEventListener(
-                    "input",
-                    (e) => (musicPlayer.volume = e.target.value / 100),
-                );
+                .addEventListener("input", (e) => {
+                    masterVolume = e.target.value / 100;
+                    musicPlayer.volume = masterVolume;
+                });
 
             // Haptic toggle
             document
@@ -1898,54 +1970,31 @@
                 const playerInWallArea =
                     playerRight > wallL && playerLeft < wallR;
 
+                // If player is in wall area, they MUST be passing through a gap to survive
                 if (playerInWallArea) {
-                    let hittingWall = false;
-                    for (let seg of wallSegments) {
-                        const segTop = seg.y;
-                        const segBottom = seg.y + seg.height;
-                        // Check if player vertically overlaps with wall segment
-                        if (playerBottom > segTop && playerTop < segBottom) {
-                            hittingWall = true;
-                            break;
-                        }
-                    }
+                    let inGap = false;
+                    for (let gap of gaps) {
+                        const gapTop = gap.y;
+                        const gapBottom = gap.y + gap.height;
 
-                    if (hittingWall) {
-                        triggerGameOver();
-                        return; // Exit early on death
-                    }
-                }
-
-                // Check gaps
-                let passedThroughGap = false;
-                for (let gap of gaps) {
-                    const gapTop = gap.y;
-                    const gapBottom = gap.y + gap.height;
-
-                    // Check if player is vertically within a gap
-                    if (playerCenterY > gapTop && playerCenterY < gapBottom) {
-                        // Check if player is horizontally within the gap
-                        if (playerInWallArea) {
-                            passedThroughGap = true;
+                        // Check if player's center is vertically within a gap
+                        if (
+                            playerCenterY > gapTop &&
+                            playerCenterY < gapBottom
+                        ) {
+                            inGap = true;
                             if (!gap.passed) {
                                 gap.passed = true;
                                 triggerHaptic(30);
                             }
+                            break;
                         }
                     }
-                }
 
-                // If player is in wall area but not passing through any gap, they hit the wall
-                if (playerInWallArea && !passedThroughGap) {
-                    // Check if there's a wall at player's position
-                    for (let seg of wallSegments) {
-                        if (
-                            playerBottom > seg.y &&
-                            playerTop < seg.y + seg.height
-                        ) {
-                            triggerGameOver();
-                            return;
-                        }
+                    // MISS THE GAP = DEATH
+                    if (!inGap) {
+                        triggerGameOver();
+                        return;
                     }
                 }
             }
@@ -1965,8 +2014,8 @@
                         const gapCenter = nextGap.x + nextGap.width / 2;
                         player.targetX =
                             gapCenter < CENTER_X()
-                                ? CENTER_X() - 100
-                                : CENTER_X() + 100;
+                                ? CENTER_X() - 80
+                                : CENTER_X() + 80;
                         player.warpActive = false;
                         const slot = activeBoosterSlots.find(
                             (s) => s.type === "warp",
@@ -2201,9 +2250,12 @@
                 requestAnimationFrame(loop);
             }
 
-            setupGameCanvas();
-            loadData();
-            loop();
+            // Initialize canvas and start game loop
+            window.addEventListener("load", () => {
+                setupGameCanvas();
+                loadData();
+                loop();
+            });
 
             // Unlock audio on first user interaction (required for mobile)
             const unlockEvents = [
@@ -2224,6 +2276,15 @@
                 document.addEventListener(event, unlockAudioHandler, {
                     passive: false,
                 });
+            });
+
+            // Handle window resize to keep canvas properly sized
+            window.addEventListener("resize", () => {
+                setupGameCanvas();
+                // Reposition player if game is not playing
+                if (gameState === "menu") {
+                    resetPlayer();
+                }
             });
 
             // Handle page visibility changes (resume audio when tab becomes active)
