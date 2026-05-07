@@ -4,7 +4,7 @@
         <meta charset="UTF-8" />
         <meta
             name="viewport"
-            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
         />
         <title>EdgeRunner x 3399</title>
         <style>
@@ -20,23 +20,6 @@
                 background: #000;
                 overflow: hidden;
                 font-family: "Courier New", monospace;
-                /* Mobile viewport fix */
-                height: 100dvh;
-                height: -webkit-fill-available;
-                width: 100vw;
-                position: fixed;
-                top: 0;
-                left: 0;
-                /* Prevent pull-to-refresh and overscroll */
-                overscroll-behavior: none;
-                /* Better touch handling */
-                touch-action: none;
-                -webkit-touch-callout: none;
-                -webkit-user-select: none;
-                user-select: none;
-                /* Prevent text size adjustment */
-                -webkit-text-size-adjust: 100%;
-                text-size-adjust: 100%;
             }
 
             /* Game canvas on top */
@@ -44,9 +27,7 @@
                 position: absolute;
                 top: 0;
                 left: 0;
-                width: 100%;
-                height: 100%;
-                z-index: 100;
+                z-index: 10;
                 display: block;
             }
 
@@ -55,13 +36,11 @@
                 position: absolute;
                 top: 0;
                 left: 0;
-                width: 100vw;
-                height: 100dvh;
+                width: 100%;
+                height: 100%;
                 z-index: 0;
                 overflow: hidden;
                 background: #000;
-                /* Mobile fix */
-                min-height: -webkit-fill-available;
             }
 
             /* 3D Perspective container */
@@ -169,12 +148,29 @@
                 background: rgba(0, 0, 0, 0.95);
                 border: 2px solid #00ffff;
                 box-shadow: 0 0 20px #00ffff;
-                padding: 30px;
+                padding: 20px;
                 color: #00ffff;
-                z-index: 200;
+                z-index: 100;
                 text-align: center;
-                width: 90%;
+                width: 92%;
                 max-width: 400px;
+                max-height: 85vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+                overscroll-behavior: contain;
+                touch-action: pan-y;
+                scrollbar-width: thin;
+                scrollbar-color: #00ffff #111;
+            }
+            #centralHub::-webkit-scrollbar {
+                width: 4px;
+            }
+            #centralHub::-webkit-scrollbar-track {
+                background: #111;
+            }
+            #centralHub::-webkit-scrollbar-thumb {
+                background: #00ffff;
+                border-radius: 2px;
             }
 
             #topLeft {
@@ -184,7 +180,7 @@
                 text-align: left;
                 color: #00ffff;
                 text-shadow: 0 0 10px #00ffff;
-                z-index: 150;
+                z-index: 15;
             }
 
             #currency {
@@ -194,7 +190,7 @@
                 color: #ffd700;
                 font-size: 18px;
                 text-shadow: 0 0 10px #ffd700;
-                z-index: 150;
+                z-index: 15;
             }
 
             #levelIndicator {
@@ -231,9 +227,23 @@
                 margin-top: 20px;
                 border-top: 1px solid #333;
                 padding-top: 20px;
-                max-height: 300px;
-                overflow-y: auto;
+                max-height: 50vh;
+                overflow-y: scroll;
                 -webkit-overflow-scrolling: touch;
+                overscroll-behavior: contain;
+                touch-action: pan-y;
+                scrollbar-width: thin;
+                scrollbar-color: #00ffff #111;
+            }
+            .sub-menu::-webkit-scrollbar {
+                width: 4px;
+            }
+            .sub-menu::-webkit-scrollbar-track {
+                background: #111;
+            }
+            .sub-menu::-webkit-scrollbar-thumb {
+                background: #00ffff;
+                border-radius: 2px;
             }
 
             .shop-item {
@@ -308,7 +318,7 @@
                 transform: translateX(-50%);
                 display: flex;
                 gap: 10px;
-                z-index: 150;
+                z-index: 10;
             }
             .booster-slot {
                 width: 45px;
@@ -383,7 +393,7 @@
                 color: #ff00ff;
                 text-shadow: 0 0 30px #ff00ff;
                 display: none;
-                z-index: 200;
+                z-index: 110;
                 pointer-events: none;
                 animation: levelPulse 2s ease-out;
             }
@@ -428,7 +438,7 @@
                 right: 20px;
                 color: #00ffff;
                 font-size: 32px;
-                z-index: 150;
+                z-index: 15;
                 pointer-events: none;
             }
             #gameOver {
@@ -440,7 +450,7 @@
                 font-size: 48px;
                 text-shadow: 0 0 20px #ff0040;
                 display: none;
-                z-index: 200;
+                z-index: 20;
                 text-align: center;
             }
 
@@ -503,13 +513,12 @@
                 position: absolute;
                 top: 0;
                 left: 0;
-                width: 100vw;
-                height: 100dvh;
-                z-index: 1;
+                width: 100%;
+                height: 100%;
+                z-index: 5;
                 pointer-events: none;
                 opacity: 0.3;
                 mix-blend-mode: screen;
-                min-height: -webkit-fill-available;
             }
 
             /* Synthwave Sunset Background */
@@ -781,18 +790,10 @@
                 --building-color: #2e0b2e;
                 --window-color: rgba(255, 0, 255, 0.3);
             }
-
-            /* Track locked styling */
-            .track-locked {
-                opacity: 0.5;
-                cursor: not-allowed;
-            }
-            .track-locked::after {
-                content: " 🔒";
-            }
         </style>
         <base target="_blank" />
-    </head>
+    <base target="_blank">
+</head>
     <body>
         <!-- Synthwave + Digital Rain Background -->
         <div id="starfield" class="level-1">
@@ -858,9 +859,8 @@
             </h1>
 
             <div id="instructions">
-                <p>TAP Right → Move Right</p>
-                <p>TAP Left → Move Left</p>
-                <p>DEPLOY = Start</p>
+                <p>ARROWS or TAP → Move</p>
+                <p>SPACE or DEPLOY → Start</p>
                 <p>DONT MISS THE GAPS!</p>
                 <p style="font-size: 10px; margin-top: 5px; color: #888">
                     Hotkeys: [1][2][3] for Boosters
@@ -948,7 +948,7 @@
         </div>
 
         <div id="gameOver">
-            "The only omes who know where the edge is, is those who go over."
+            CRITICAL FAILURE
             <p style="font-size: 20px; color: #00ffff; margin-top: 10px">
                 Score: <span id="finalScore">0</span>
             </p>
@@ -979,7 +979,7 @@
                 top: 0;
                 width: 50%;
                 height: 100%;
-                z-index: 50;
+                z-index: 5;
             "
         ></div>
         <div
@@ -990,7 +990,7 @@
                 top: 0;
                 width: 50%;
                 height: 100%;
-                z-index: 50;
+                z-index: 5;
             "
         ></div>
 
@@ -999,17 +999,6 @@
         <script>
             const canvas = document.getElementById("gameCanvas");
             const ctx = canvas.getContext("2d");
-
-            // Mobile canvas setup - use CSS pixel coordinates for gameplay
-            function setupGameCanvas() {
-                const rect = canvas.getBoundingClientRect();
-                // Use CSS pixel dimensions for canvas (not multiplied by DPR)
-                // This ensures coordinates match touch/mouse positions
-                canvas.width = rect.width || window.innerWidth;
-                canvas.height = rect.height || window.innerHeight;
-                // Don't scale context - use CSS pixels directly
-                // DPR scaling is handled by the browser automatically
-            }
             const starfield = document.getElementById("starfield");
             const scoreEl = document.getElementById("score");
             const hub = document.getElementById("centralHub");
@@ -1224,7 +1213,6 @@
             let audioInited = false;
             let masterVolume = 0.8;
             let currentTrackIndex = 0;
-            // 8 tracks total - first 4 available, tracks 5-8 unlock with levels
             const playlist = [
                 "music0.mp3",
                 "music1.mp3",
@@ -1234,39 +1222,15 @@
                 "music5.mp3",
                 "music6.mp3",
                 "music7.mp3",
+                "music8.mp3",
             ];
-            // Tracks 5-8 (indices 4-7) are locked until player reaches certain levels
-            const trackLevelRequirements = [0, 0, 0, 0, 3, 4, 5, 6]; // Level required to unlock each track
+            const TRACK_UNLOCK_LEVELS = [1, 1, 1, 1, 2, 3, 4, 5, 6];
             let enabledTracks =
                 JSON.parse(localStorage.getItem("neonGapEnabledTracks")) ||
                 playlist.map(() => true);
             const musicPlayer = new Audio();
             let musicStarted = false;
             let savedTrackTime = 0;
-
-            // Unlock audio context (required for mobile browsers)
-            function unlockAudioContext() {
-                if (!audioCtx) return;
-                if (
-                    audioCtx.state === "suspended" ||
-                    audioCtx.state === "interrupted"
-                ) {
-                    console.log("[Audio] Unlocking audio context...");
-                    audioCtx
-                        .resume()
-                        .then(() => {
-                            console.log(
-                                "[Audio] Audio context unlocked successfully",
-                            );
-                        })
-                        .catch((err) => {
-                            console.error(
-                                "[Audio] Failed to unlock audio context:",
-                                err,
-                            );
-                        });
-                }
-            }
 
             function initAudio() {
                 if (audioInited) return;
@@ -1315,37 +1279,49 @@
             }
 
             function loadAndPlay(index, startTime = 0) {
-                // Skip disabled tracks
-                if (!enabledTracks[index]) {
+                // Check if track is unlocked
+                if (currentLevel < TRACK_UNLOCK_LEVELS[index]) {
                     let nextIndex = (index + 1) % playlist.length;
                     let attempts = 0;
                     while (
-                        !enabledTracks[nextIndex] &&
+                        (currentLevel < TRACK_UNLOCK_LEVELS[nextIndex] || !enabledTracks[nextIndex]) &&
                         attempts < playlist.length
                     ) {
                         nextIndex = (nextIndex + 1) % playlist.length;
                         attempts++;
                     }
-                    if (attempts >= playlist.length) return; // All tracks disabled
+                    if (attempts >= playlist.length) return;
+                    index = nextIndex;
+                }
+
+                // Skip disabled tracks
+                if (!enabledTracks[index]) {
+                    let nextIndex = (index + 1) % playlist.length;
+                    let attempts = 0;
+                    while (
+                        (currentLevel < TRACK_UNLOCK_LEVELS[nextIndex] || !enabledTracks[nextIndex]) &&
+                        attempts < playlist.length
+                    ) {
+                        nextIndex = (nextIndex + 1) % playlist.length;
+                        attempts++;
+                    }
+                    if (attempts >= playlist.length) return;
                     index = nextIndex;
                 }
 
                 currentTrackIndex = index;
                 musicPlayer.src = playlist[index];
                 musicPlayer.currentTime = startTime;
-                musicPlayer.volume = masterVolume;
-                musicPlayer.play().catch((err) => {
-                    console.log(
-                        "[Audio] Play failed (may need user interaction):",
-                        err,
-                    );
-                });
+                musicPlayer.play().catch(() => {});
 
                 musicPlayer.onended = () => {
                     let next = (currentTrackIndex + 1) % playlist.length;
-                    // Skip to next enabled track
+                    // Skip to next enabled and unlocked track
                     let attempts = 0;
-                    while (!enabledTracks[next] && attempts < playlist.length) {
+                    while (
+                        (currentLevel < TRACK_UNLOCK_LEVELS[next] || !enabledTracks[next]) && 
+                        attempts < playlist.length
+                    ) {
                         next = (next + 1) % playlist.length;
                         attempts++;
                     }
@@ -1355,55 +1331,50 @@
                 };
             }
 
-            // Build track list with level-based unlocking
-            function buildTrackList() {
-                const trackListDiv = document.getElementById("trackList");
+            const trackListDiv = document.getElementById("trackList");
+            function renderTrackList() {
                 trackListDiv.innerHTML = "";
                 playlist.forEach((track, i) => {
-                    const requiredLevel = trackLevelRequirements[i];
-                    const isLocked = currentLevel < requiredLevel;
                     const label = document.createElement("label");
-                    label.className = isLocked ? "track-locked" : "";
-                    label.title = isLocked
-                        ? `Unlocks at Level ${requiredLevel}`
-                        : "";
-                    label.innerHTML = `<input type="checkbox" ${enabledTracks[i] && !isLocked ? "checked" : ""} data-index="${i}" ${isLocked ? "disabled" : ""}> Track ${i + 1}${isLocked ? ` (Lv.${requiredLevel})` : ""}`;
+                    const unlockLevel = TRACK_UNLOCK_LEVELS[i];
+                    const isLocked = currentLevel < unlockLevel;
+                    const lockText = isLocked ? ` 🔒 LVL ${unlockLevel}` : "";
+                    const lockedStyle = isLocked ? "opacity: 0.4; cursor: not-allowed; filter: grayscale(0.8);" : "cursor: pointer;";
+
+                    label.innerHTML = `<input type="checkbox" ${enabledTracks[i] && !isLocked ? "checked" : ""} data-index="${i}" ${isLocked ? "disabled" : ""}> Track ${i}${lockText}`;
+                    label.style.cssText = lockedStyle + " display: block; padding: 6px 0; font-size: 12px; color: #00ffff; border-bottom: 1px solid rgba(0,255,255,0.1);";
                     trackListDiv.appendChild(label);
+
                     if (!isLocked) {
-                        label
-                            .querySelector("input")
-                            .addEventListener("change", (e) => {
-                                enabledTracks[i] = e.target.checked;
-                                localStorage.setItem(
-                                    "neonGapEnabledTracks",
-                                    JSON.stringify(enabledTracks),
-                                );
-                                // If current track was disabled, skip to next
-                                if (
-                                    !e.target.checked &&
-                                    i === currentTrackIndex &&
-                                    !musicPlayer.paused
+                        label.querySelector("input").addEventListener("change", (e) => {
+                            enabledTracks[i] = e.target.checked;
+                            localStorage.setItem(
+                                "neonGapEnabledTracks",
+                                JSON.stringify(enabledTracks),
+                            );
+                            if (
+                                !e.target.checked &&
+                                i === currentTrackIndex &&
+                                !musicPlayer.paused
+                            ) {
+                                let next = (i + 1) % playlist.length;
+                                let attempts = 0;
+                                while (
+                                    (currentLevel < TRACK_UNLOCK_LEVELS[next] || !enabledTracks[next]) &&
+                                    attempts < playlist.length
                                 ) {
-                                    let next = (i + 1) % playlist.length;
-                                    let attempts = 0;
-                                    while (
-                                        !enabledTracks[next] &&
-                                        attempts < playlist.length
-                                    ) {
-                                        next = (next + 1) % playlist.length;
-                                        attempts++;
-                                    }
-                                    if (attempts < playlist.length) {
-                                        loadAndPlay(next);
-                                    }
+                                    next = (next + 1) % playlist.length;
+                                    attempts++;
                                 }
-                            });
+                                if (attempts < playlist.length) {
+                                    loadAndPlay(next);
+                                }
+                            }
+                        });
                     }
                 });
             }
-
-            // Initialize track list
-            buildTrackList();
+            renderTrackList();
 
             function updateFilter(muffled) {
                 if (!lowPassFilter) return;
@@ -1413,50 +1384,6 @@
                     0.2,
                 );
             }
-
-            // --- MOBILE DEVICE SETUP ---
-            // Handle high-DPI displays for crisp rendering
-            const dpr = window.devicePixelRatio || 1;
-
-            // Fix for iOS Safari 100vh issue
-            function setMobileHeight() {
-                const vh = window.innerHeight * 0.01;
-                document.documentElement.style.setProperty("--vh", `${vh}px`);
-            }
-            setMobileHeight();
-            window.addEventListener("resize", setMobileHeight);
-            window.addEventListener("orientationchange", () => {
-                setTimeout(setMobileHeight, 100);
-            });
-
-            // Prevent mobile scrolling/bouncing
-            document.addEventListener(
-                "touchmove",
-                function (e) {
-                    if (
-                        e.target === document.getElementById("leftZone") ||
-                        e.target === document.getElementById("rightZone") ||
-                        e.target.tagName === "CANVAS"
-                    ) {
-                        e.preventDefault();
-                    }
-                },
-                { passive: false },
-            );
-
-            // Prevent double-tap zoom
-            let lastTouchEnd = 0;
-            document.addEventListener(
-                "touchend",
-                function (e) {
-                    const now = Date.now();
-                    if (now - lastTouchEnd <= 300) {
-                        e.preventDefault();
-                    }
-                    lastTouchEnd = now;
-                },
-                { passive: false },
-            );
 
             // --- DIGITAL RAIN OVERLAY ---
             const rainCanvas = document.getElementById("rainCanvas");
@@ -1470,10 +1397,8 @@
             let rainDrops = [];
 
             function initRain() {
-                // Use CSS pixel dimensions
-                const rect = rainCanvas.getBoundingClientRect();
-                rainCanvas.width = rect.width || window.innerWidth;
-                rainCanvas.height = rect.height || window.innerHeight;
+                rainCanvas.width = window.innerWidth;
+                rainCanvas.height = window.innerHeight;
                 const columns = Math.floor(rainCanvas.width / fontSize);
                 rainColumns = [];
                 rainDrops = [];
@@ -1585,11 +1510,11 @@
                     // Update background theme for new level
                     updateBackgroundTheme(currentLevel);
 
-                    // Rebuild track list to unlock new tracks
-                    buildTrackList();
-
                     // Haptic feedback for level up
                     triggerHaptic([100, 50, 100, 50, 200]);
+
+                    // Refresh track list to show newly unlocked tracks
+                    if (typeof renderTrackList === "function") renderTrackList();
                 }
             }
 
@@ -1672,8 +1597,8 @@
             }
 
             function resetPlayer() {
-                player.y = canvas.height - 150;
-                player.targetX = canvas.width / 2 - 80;
+                player.y = window.innerHeight - 200;
+                player.targetX = window.innerWidth / 2 - 100;
                 player.x = player.targetX;
                 player.trail = [];
                 player.shieldActive = false;
@@ -1693,11 +1618,9 @@
             function initWall() {
                 wallSegments = [];
                 gaps = [];
-                // Create initial walls closer to player so they're visible
-                const startY = -100;
-                addSegment(startY);
-                addSegment(startY - 600);
-                addSegment(startY - 1200);
+                addSegment(-400);
+                addSegment(-1000);
+                addSegment(-1600);
             }
 
             function addSegment(y) {
@@ -1714,9 +1637,7 @@
             }
 
             function startGame() {
-                console.log("[Game] Starting game...");
                 initAudio();
-                unlockAudioContext(); // Ensure audio is unlocked on game start
                 loadData();
                 initBoosters();
                 gameState = "playing";
@@ -1778,8 +1699,8 @@
                 if (gameState === "playing") {
                     player.targetX =
                         side === "left"
-                            ? canvas.width / 2 - 80
-                            : canvas.width / 2 + 80;
+                            ? window.innerWidth / 2 - 100
+                            : window.innerWidth / 2 + 100;
                 } else if (gameState === "gameover") {
                     hub.style.display = "block";
                     gameOverEl.style.display = "none";
@@ -1790,18 +1711,7 @@
             document
                 .getElementById("playBtn")
                 .addEventListener("click", startGame);
-            document
-                .getElementById("toggleAudio")
-                .addEventListener("click", () => {
-                    const m = document.getElementById("audioMenu");
-                    const s = document.getElementById("shopMenu");
-                    s.style.display = "none";
-                    m.style.display =
-                        m.style.display === "block" ? "none" : "block";
-                    if (m.style.display === "block") {
-                        buildTrackList(); // Refresh track list to show unlocks
-                    }
-                });
+            
             document
                 .getElementById("toggleShop")
                 .addEventListener("click", () => {
@@ -1813,11 +1723,21 @@
                     if (s.style.display === "block") updateShopDisplay();
                 });
             document
-                .getElementById("volumeSlider")
-                .addEventListener("input", (e) => {
-                    masterVolume = e.target.value / 100;
-                    musicPlayer.volume = masterVolume;
+                .getElementById("toggleAudio")
+                .addEventListener("click", () => {
+                    const m = document.getElementById("audioMenu");
+                    const s = document.getElementById("shopMenu");
+                    s.style.display = "none";
+                    m.style.display =
+                        m.style.display === "block" ? "none" : "block";
+                    if (m.style.display === "block" && typeof renderTrackList === "function") renderTrackList();
                 });
+            document
+                .getElementById("volumeSlider")
+                .addEventListener(
+                    "input",
+                    (e) => (musicPlayer.volume = e.target.value / 100),
+                );
 
             // Haptic toggle
             document
@@ -1830,24 +1750,19 @@
                     if (hapticEnabled) triggerHaptic(50);
                 });
 
-            // Touch events with { passive: false } for mobile
             ["mousedown", "touchstart"].forEach((evt) => {
-                document.getElementById("leftZone").addEventListener(
-                    evt,
-                    (e) => {
+                document
+                    .getElementById("leftZone")
+                    .addEventListener(evt, (e) => {
                         e.preventDefault();
                         handleInput("left");
-                    },
-                    { passive: false },
-                );
-                document.getElementById("rightZone").addEventListener(
-                    evt,
-                    (e) => {
+                    });
+                document
+                    .getElementById("rightZone")
+                    .addEventListener(evt, (e) => {
                         e.preventDefault();
                         handleInput("right");
-                    },
-                    { passive: false },
-                );
+                    });
             });
 
             document.addEventListener("keydown", (e) => {
@@ -1893,7 +1808,6 @@
                     ? currentSpeed * 0.5
                     : currentSpeed;
 
-                // Move walls and gaps
                 for (let i = 0; i < wallSegments.length; i++) {
                     wallSegments[i].y += speed;
                 }
@@ -1901,7 +1815,6 @@
                     gaps[i].y += speed;
                 }
 
-                // Remove off-screen walls and increment score
                 if (wallSegments.length > 0) {
                     const firstSeg = wallSegments[0];
                     if (firstSeg.y > canvas.height + 50) {
@@ -1918,41 +1831,31 @@
                     }
                 }
 
-                // Remove off-screen gaps
                 while (gaps.length > 0 && gaps[0].y > canvas.height + 50) {
                     gaps.shift();
                 }
 
-                // Generate new walls/gaps when needed
-                // Check if we need to generate more walls (keep at least 3 ahead)
-                const topWall = wallSegments[wallSegments.length - 1];
-                const topGap = gaps[gaps.length - 1];
+                if (wallSegments.length > 0) {
+                    const topSeg = wallSegments[wallSegments.length - 1];
+                    if (topSeg.y > -500) {
+                        const lastSeg = wallSegments[wallSegments.length - 1];
+                        const gapHeight = 150 + Math.random() * 50;
+                        const wallHeight = 250 + Math.random() * 150;
+                        const levelShrink = Math.min(40, currentLevel * 5);
 
-                // Generate new segments if top wall is getting close to player
-                if (!topWall || topWall.y > -800) {
-                    const lastSeg =
-                        wallSegments.length > 0
-                            ? wallSegments[wallSegments.length - 1]
-                            : { y: -400, height: 300 };
-                    const gapHeight = 150 + Math.random() * 50;
-                    const wallHeight = 250 + Math.random() * 150;
-                    const levelShrink = Math.min(40, currentLevel * 5);
-
-                    // Add new gap
-                    gaps.push({
-                        y: lastSeg.y - gapHeight,
-                        height: Math.max(80, gapHeight - levelShrink),
-                        x: WALL_LEFT(),
-                        width: DIVIDER_WIDTH,
-                        passed: false,
-                    });
-
-                    // Add new wall segment
-                    wallSegments.push({
-                        y: lastSeg.y - gapHeight - wallHeight,
-                        height: wallHeight,
-                        passed: false,
-                    });
+                        gaps.push({
+                            y: lastSeg.y - gapHeight,
+                            height: Math.max(80, gapHeight - levelShrink),
+                            x: WALL_LEFT(),
+                            width: DIVIDER_WIDTH,
+                            passed: false,
+                        });
+                        wallSegments.push({
+                            y: lastSeg.y - gapHeight - wallHeight,
+                            height: wallHeight,
+                            passed: false,
+                        });
+                    }
                 }
             }
 
@@ -1966,35 +1869,53 @@
                 const wallL = WALL_LEFT();
                 const wallR = WALL_RIGHT();
 
-                // Check if player is horizontally within the wall area
-                const playerInWallArea =
-                    playerRight > wallL && playerLeft < wallR;
-
-                // If player is in wall area, they MUST be passing through a gap to survive
-                if (playerInWallArea) {
-                    let inGap = false;
-                    for (let gap of gaps) {
-                        const gapTop = gap.y;
-                        const gapBottom = gap.y + gap.height;
-
-                        // Check if player's center is vertically within a gap
+                if (playerRight > wallL && playerLeft < wallR) {
+                    let hittingWall = false;
+                    for (let seg of wallSegments) {
+                        const segTop = seg.y;
+                        const segBottom = seg.y + seg.height;
                         if (
-                            playerCenterY > gapTop &&
-                            playerCenterY < gapBottom
+                            playerBottom > segTop + 5 &&
+                            playerTop < segBottom - 5
                         ) {
-                            inGap = true;
-                            if (!gap.passed) {
-                                gap.passed = true;
-                                triggerHaptic(30);
-                            }
+                            hittingWall = true;
                             break;
                         }
                     }
 
-                    // MISS THE GAP = DEATH
-                    if (!inGap) {
+                    if (hittingWall) {
                         triggerGameOver();
-                        return;
+                    }
+                }
+
+                for (let gap of gaps) {
+                    const gapTop = gap.y;
+                    const gapBottom = gap.y + gap.height;
+
+                    if (
+                        !gap.passed &&
+                        gapTop < playerCenterY &&
+                        gapBottom > playerCenterY
+                    ) {
+                        const playerInGapHorizontally =
+                            playerLeft < WALL_RIGHT() &&
+                            playerRight > WALL_LEFT();
+                        if (playerInGapHorizontally) {
+                            if (
+                                playerCenterY > gapTop + 10 &&
+                                playerCenterY < gapBottom - 10
+                            ) {
+                                gap.passed = true;
+                                // Haptic feedback for successful gap pass
+                                triggerHaptic(30);
+                            } else {
+                                triggerGameOver();
+                            }
+                        }
+                    }
+
+                    if (!gap.passed && gapTop > playerCenterY + 50) {
+                        triggerGameOver();
                     }
                 }
             }
@@ -2014,8 +1935,8 @@
                         const gapCenter = nextGap.x + nextGap.width / 2;
                         player.targetX =
                             gapCenter < CENTER_X()
-                                ? CENTER_X() - 80
-                                : CENTER_X() + 80;
+                                ? CENTER_X() - 100
+                                : CENTER_X() + 100;
                         player.warpActive = false;
                         const slot = activeBoosterSlots.find(
                             (s) => s.type === "warp",
@@ -2046,7 +1967,9 @@
             }
 
             function draw() {
-                // Clear canvas completely
+                // Clear canvas completely (transparent)
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
                 ctx.clearRect(0, 0, canvas.width, canvas.height);
 
                 // Apply screen shake offset
@@ -2250,75 +2173,8 @@
                 requestAnimationFrame(loop);
             }
 
-            // Initialize canvas and start game loop
-            window.addEventListener("load", () => {
-                setupGameCanvas();
-                loadData();
-                loop();
-            });
-
-            // Unlock audio on first user interaction (required for mobile)
-            const unlockEvents = [
-                "touchstart",
-                "touchend",
-                "mousedown",
-                "keydown",
-            ];
-            function unlockAudioHandler(e) {
-                console.log("[Audio] User interaction detected:", e.type);
-                unlockAudioContext();
-                // Remove listeners after first interaction
-                unlockEvents.forEach((event) => {
-                    document.removeEventListener(event, unlockAudioHandler);
-                });
-            }
-            unlockEvents.forEach((event) => {
-                document.addEventListener(event, unlockAudioHandler, {
-                    passive: false,
-                });
-            });
-
-            // Handle window resize to keep canvas properly sized
-            window.addEventListener("resize", () => {
-                setupGameCanvas();
-                // Reposition player if game is not playing
-                if (gameState === "menu") {
-                    resetPlayer();
-                }
-            });
-
-            // Handle page visibility changes (resume audio when tab becomes active)
-            document.addEventListener("visibilitychange", () => {
-                console.log(
-                    "[Audio] Visibility changed:",
-                    document.visibilityState,
-                );
-                if (document.visibilityState === "visible") {
-                    // Page became visible - try to resume audio if it was interrupted
-                    if (
-                        audioCtx &&
-                        (audioCtx.state === "suspended" ||
-                            audioCtx.state === "interrupted")
-                    ) {
-                        console.log(
-                            "[Audio] Resuming after visibility change...",
-                        );
-                        audioCtx
-                            .resume()
-                            .then(() => {
-                                console.log(
-                                    "[Audio] Resumed successfully after visibility change",
-                                );
-                            })
-                            .catch((err) => {
-                                console.error(
-                                    "[Audio] Failed to resume after visibility change:",
-                                    err,
-                                );
-                            });
-                    }
-                }
-            });
+            loadData();
+            loop();
         </script>
     </body>
 </html>
