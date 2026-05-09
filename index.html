@@ -139,7 +139,7 @@
                 --shape-color: #ffff00;
             }
 
-            /* Central Menu Hub - Mobile scrollable */
+            /* Central Menu Hub */
             #centralHub {
                 position: absolute;
                 top: 50%;
@@ -154,11 +154,6 @@
                 text-align: center;
                 width: 92%;
                 max-width: 400px;
-<<<<<<< HEAD
-                max-height: 90vh;
-                overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
-=======
                 max-height: 85vh;
                 overflow-y: auto;
                 -webkit-overflow-scrolling: touch;
@@ -176,7 +171,6 @@
             #centralHub::-webkit-scrollbar-thumb {
                 background: #00ffff;
                 border-radius: 2px;
->>>>>>> 3c75cb8802850f7b82679a9a095d35d1e24e3c51
             }
 
             #topLeft {
@@ -233,12 +227,6 @@
                 margin-top: 20px;
                 border-top: 1px solid #333;
                 padding-top: 20px;
-<<<<<<< HEAD
-                max-height: 40vh;
-                overflow-y: auto;
-                -webkit-overflow-scrolling: touch;
-                overscroll-behavior: contain;
-=======
                 max-height: 50vh;
                 overflow-y: scroll;
                 -webkit-overflow-scrolling: touch;
@@ -256,7 +244,6 @@
             .sub-menu::-webkit-scrollbar-thumb {
                 background: #00ffff;
                 border-radius: 2px;
->>>>>>> 3c75cb8802850f7b82679a9a095d35d1e24e3c51
             }
 
             .shop-item {
@@ -803,23 +790,6 @@
                 --building-color: #2e0b2e;
                 --window-color: rgba(255, 0, 255, 0.3);
             }
-<<<<<<< HEAD
-
-            /* Track locked styling */
-            .track-locked {
-                opacity: 0.5;
-                cursor: not-allowed;
-            }
-            .track-locked::after {
-                content: " 🔒";
-            }
-            
-            /* Touch zones - no scroll */
-            #leftZone, #rightZone, #gameCanvas {
-                touch-action: none;
-            }
-=======
->>>>>>> 3c75cb8802850f7b82679a9a095d35d1e24e3c51
         </style>
         <base target="_blank" />
     <base target="_blank">
@@ -1254,12 +1224,7 @@
                 "music7.mp3",
                 "music8.mp3",
             ];
-<<<<<<< HEAD
-            // Tracks 5-8 (indices 4-7) are locked until player reaches certain levels
-            const trackLevelRequirements = [0, 0, 0, 0, 3, 4, 5, 6, 7]; // Level required to unlock each track
-=======
             const TRACK_UNLOCK_LEVELS = [1, 1, 1, 1, 2, 3, 4, 5, 6];
->>>>>>> 3c75cb8802850f7b82679a9a095d35d1e24e3c51
             let enabledTracks =
                 JSON.parse(localStorage.getItem("neonGapEnabledTracks")) ||
                 playlist.map(() => true);
@@ -1514,9 +1479,9 @@
             // Initialize rain on load
             initRain();
             window.addEventListener("resize", initRain);
-         
+
             // --- GAME LOGIC ---
-            const START_SPEED = 5.5;
+            const START_SPEED = 9.5;
             const MAX_SPEED = 33;
             let currentSpeed = START_SPEED;
             let playerColor = "#00ffff";
@@ -1748,13 +1713,8 @@
                 if (gameState === "playing") {
                     player.targetX =
                         side === "left"
-<<<<<<< HEAD
-                            ? canvas.width - 80
-                            : canvas.width + 80;
-=======
                             ? window.innerWidth / 2 - 100
                             : window.innerWidth / 2 + 100;
->>>>>>> 3c75cb8802850f7b82679a9a095d35d1e24e3c51
                 } else if (gameState === "gameover") {
                     hub.style.display = "block";
                     gameOverEl.style.display = "none";
