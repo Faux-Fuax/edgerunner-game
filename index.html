@@ -20,6 +20,10 @@
                 background: #000;
                 overflow: hidden;
                 font-family: "Courier New", monospace;
+                touch-action: none;
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                user-select: none;
             }
 
             /* Game canvas on top */
@@ -29,6 +33,8 @@
                 left: 0;
                 z-index: 10;
                 display: block;
+                pointer-events: none;
+                touch-action: none;
             }
 
             /* Star Wars 3D Background - Behind everything */
@@ -162,16 +168,9 @@
                 scrollbar-width: thin;
                 scrollbar-color: #00ffff #111;
             }
-            #centralHub::-webkit-scrollbar {
-                width: 4px;
-            }
-            #centralHub::-webkit-scrollbar-track {
-                background: #111;
-            }
-            #centralHub::-webkit-scrollbar-thumb {
-                background: #00ffff;
-                border-radius: 2px;
-            }
+            #centralHub::-webkit-scrollbar { width: 4px; }
+            #centralHub::-webkit-scrollbar-track { background: #111; }
+            #centralHub::-webkit-scrollbar-thumb { background: #00ffff; border-radius: 2px; }
 
             #topLeft {
                 position: absolute;
@@ -235,16 +234,9 @@
                 scrollbar-width: thin;
                 scrollbar-color: #00ffff #111;
             }
-            .sub-menu::-webkit-scrollbar {
-                width: 4px;
-            }
-            .sub-menu::-webkit-scrollbar-track {
-                background: #111;
-            }
-            .sub-menu::-webkit-scrollbar-thumb {
-                background: #00ffff;
-                border-radius: 2px;
-            }
+            .sub-menu::-webkit-scrollbar { width: 4px; }
+            .sub-menu::-webkit-scrollbar-track { background: #111; }
+            .sub-menu::-webkit-scrollbar-thumb { background: #00ffff; border-radius: 2px; }
 
             .shop-item {
                 background: rgba(0, 255, 255, 0.1);
@@ -979,7 +971,8 @@
                 top: 0;
                 width: 50%;
                 height: 100%;
-                z-index: 5;
+                z-index: 25;
+                touch-action: manipulation;
             "
         ></div>
         <div
@@ -990,7 +983,8 @@
                 top: 0;
                 width: 50%;
                 height: 100%;
-                z-index: 5;
+                z-index: 25;
+                touch-action: manipulation;
             "
         ></div>
 
@@ -1219,121 +1213,86 @@
                 "music2.mp3",
                 "music3.mp3",
                 "music4.mp3",
-                "music5.mp3",
-                "music6.mp3",
-                "music7.mp3",
-                "music8.mp3",
             ];
-            const TRACK_UNLOCK_LEVELS = [1, 1, 1, 1, 2, 3, 4, 5, 6];
             let enabledTracks =
                 JSON.parse(localStorage.getItem("neonGapEnabledTracks")) ||
                 playlist.map(() => true);
             const musicPlayer = new Audio();
             let musicStarted = false;
             let savedTrackTime = 0;
-            let audioUnlocked = false;
 
             function initAudio() {
                 if (audioInited) return;
-
-                // Create AudioContext
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-
-                // Create lowpass filter for muffled menu effect
+                audioCtx = new (
+                    window.AudioContext || window.webkitAudioContext
+                )();
                 lowPassFilter = audioCtx.createBiquadFilter();
                 lowPassFilter.type = "lowpass";
-                lowPassFilter.frequency.setValueAtTime(600, audioCtx.currentTime);
-
-                // Connect audio graph
+                lowPassFilter.frequency.setValueAtTime(
+                    600,
+                    audioCtx.currentTime,
+                );
                 musicSource = audioCtx.createMediaElementSource(musicPlayer);
-                musicSource.connect(lowPassFilter).connect(audioCtx.destination);
+                musicSource
+                    .connect(lowPassFilter)
+                    .connect(audioCtx.destination);
 
-                // Set initial volume
-                musicPlayer.volume = document.getElementById("volumeSlider").value / 100;
-
-                // Restore saved track position
-                const savedTrack = parseInt(localStorage.getItem("neonGapCurrentTrack")) || 0;
-                const savedTime = parseFloat(localStorage.getItem("neonGapTrackTime")) || 0;
+                // Restore saved track position if exists
+                const savedTrack =
+                    parseInt(localStorage.getItem("neonGapCurrentTrack")) || 0;
+                const savedTime =
+                    parseFloat(localStorage.getItem("neonGapTrackTime")) || 0;
                 currentTrackIndex = savedTrack;
                 savedTrackTime = savedTime;
+
+                if (!musicStarted) {
+                    loadAndPlay(currentTrackIndex, savedTime);
+                    musicStarted = true;
+                }
+
+                // Save track position periodically
+                setInterval(() => {
+                    if (gameState !== "menu" && !musicPlayer.paused) {
+                        localStorage.setItem(
+                            "neonGapCurrentTrack",
+                            currentTrackIndex,
+                        );
+                        localStorage.setItem(
+                            "neonGapTrackTime",
+                            musicPlayer.currentTime,
+                        );
+                    }
+                }, 1000);
 
                 audioInited = true;
             }
 
-            // Unlock audio context after user interaction (required by browsers)
-            function unlockAudio() {
-                if (audioUnlocked) return;
-
-                if (audioCtx && audioCtx.state === "suspended") {
-                    audioCtx.resume().then(() => {
-                        console.log("AudioContext resumed");
-                    }).catch(err => console.log("Audio resume failed:", err));
-                }
-
-                // Start music if not already started
-                if (!musicStarted) {
-                    loadAndPlay(currentTrackIndex, savedTrackTime);
-                    musicStarted = true;
-                } else if (musicPlayer.paused) {
-                    // Resume if paused
-                    musicPlayer.play().catch(() => {});
-                }
-
-                audioUnlocked = true;
-            }
-
             function loadAndPlay(index, startTime = 0) {
-                // Check if track is unlocked
-                if (currentLevel < TRACK_UNLOCK_LEVELS[index]) {
-                    let nextIndex = (index + 1) % playlist.length;
-                    let attempts = 0;
-                    while (
-                        (currentLevel < TRACK_UNLOCK_LEVELS[nextIndex] || !enabledTracks[nextIndex]) &&
-                        attempts < playlist.length
-                    ) {
-                        nextIndex = (nextIndex + 1) % playlist.length;
-                        attempts++;
-                    }
-                    if (attempts >= playlist.length) return;
-                    index = nextIndex;
-                }
-
                 // Skip disabled tracks
                 if (!enabledTracks[index]) {
                     let nextIndex = (index + 1) % playlist.length;
                     let attempts = 0;
                     while (
-                        (currentLevel < TRACK_UNLOCK_LEVELS[nextIndex] || !enabledTracks[nextIndex]) &&
+                        !enabledTracks[nextIndex] &&
                         attempts < playlist.length
                     ) {
                         nextIndex = (nextIndex + 1) % playlist.length;
                         attempts++;
                     }
-                    if (attempts >= playlist.length) return;
+                    if (attempts >= playlist.length) return; // All tracks disabled
                     index = nextIndex;
                 }
 
                 currentTrackIndex = index;
                 musicPlayer.src = playlist[index];
                 musicPlayer.currentTime = startTime;
-
-                // Play with proper promise handling
-                const playPromise = musicPlayer.play();
-                if (playPromise !== undefined) {
-                    playPromise.catch(err => {
-                        console.log("Playback prevented (waiting for interaction):", err.name);
-                        // Don't throw - browser will block until user interaction
-                    });
-                }
+                musicPlayer.play().catch(() => {});
 
                 musicPlayer.onended = () => {
                     let next = (currentTrackIndex + 1) % playlist.length;
-                    // Skip to next enabled and unlocked track
+                    // Skip to next enabled track
                     let attempts = 0;
-                    while (
-                        (currentLevel < TRACK_UNLOCK_LEVELS[next] || !enabledTracks[next]) && 
-                        attempts < playlist.length
-                    ) {
+                    while (!enabledTracks[next] && attempts < playlist.length) {
                         next = (next + 1) % playlist.length;
                         attempts++;
                     }
@@ -1344,50 +1303,37 @@
             }
 
             const trackListDiv = document.getElementById("trackList");
-
-            function renderTrackList() {
-                trackListDiv.innerHTML = "";
-                playlist.forEach((track, i) => {
-                    const label = document.createElement("label");
-                    const unlockLevel = TRACK_UNLOCK_LEVELS[i];
-                    const isLocked = currentLevel < unlockLevel;
-                    const lockText = isLocked ? ` 🔒 LVL ${unlockLevel}` : "";
-                    const lockedStyle = isLocked ? "opacity: 0.4; cursor: not-allowed; filter: grayscale(0.8);" : "cursor: pointer;";
-
-                    label.innerHTML = `<input type="checkbox" ${enabledTracks[i] && !isLocked ? "checked" : ""} data-index="${i}" ${isLocked ? "disabled" : ""}> Track ${i}${lockText}`;
-                    label.style.cssText = lockedStyle + " display: block; padding: 6px 0; font-size: 12px; color: #00ffff; border-bottom: 1px solid rgba(0,255,255,0.1);";
-                    trackListDiv.appendChild(label);
-
-                    if (!isLocked) {
-                        label.querySelector("input").addEventListener("change", (e) => {
-                            enabledTracks[i] = e.target.checked;
-                            localStorage.setItem(
-                                "neonGapEnabledTracks",
-                                JSON.stringify(enabledTracks),
-                            );
-                            if (
-                                !e.target.checked &&
-                                i === currentTrackIndex &&
-                                !musicPlayer.paused
-                            ) {
-                                let next = (i + 1) % playlist.length;
-                                let attempts = 0;
-                                while (
-                                    (currentLevel < TRACK_UNLOCK_LEVELS[next] || !enabledTracks[next]) &&
-                                    attempts < playlist.length
-                                ) {
-                                    next = (next + 1) % playlist.length;
-                                    attempts++;
-                                }
-                                if (attempts < playlist.length) {
-                                    loadAndPlay(next);
-                                }
-                            }
-                        });
+            playlist.forEach((track, i) => {
+                const label = document.createElement("label");
+                label.innerHTML = `<input type="checkbox" ${enabledTracks[i] ? "checked" : ""} data-index="${i}"> Track ${i}`;
+                trackListDiv.appendChild(label);
+                label.querySelector("input").addEventListener("change", (e) => {
+                    enabledTracks[i] = e.target.checked;
+                    localStorage.setItem(
+                        "neonGapEnabledTracks",
+                        JSON.stringify(enabledTracks),
+                    );
+                    // If current track was disabled, skip to next
+                    if (
+                        !e.target.checked &&
+                        i === currentTrackIndex &&
+                        !musicPlayer.paused
+                    ) {
+                        let next = (i + 1) % playlist.length;
+                        let attempts = 0;
+                        while (
+                            !enabledTracks[next] &&
+                            attempts < playlist.length
+                        ) {
+                            next = (next + 1) % playlist.length;
+                            attempts++;
+                        }
+                        if (attempts < playlist.length) {
+                            loadAndPlay(next);
+                        }
                     }
                 });
-            }
-            renderTrackList();
+            });
 
             function updateFilter(muffled) {
                 if (!lowPassFilter) return;
@@ -1525,9 +1471,6 @@
 
                     // Haptic feedback for level up
                     triggerHaptic([100, 50, 100, 50, 200]);
-
-                    // Refresh track list to show newly unlocked tracks
-                    if (typeof renderTrackList === "function") renderTrackList();
                 }
             }
 
@@ -1651,7 +1594,6 @@
 
             function startGame() {
                 initAudio();
-                unlockAudio(); // Resume AudioContext and start playback
                 loadData();
                 initBoosters();
                 gameState = "playing";
@@ -1711,10 +1653,11 @@
 
             function handleInput(side) {
                 if (gameState === "playing") {
-                    player.targetX =
-                        side === "left"
-                            ? window.innerWidth / 2 - 100
-                            : window.innerWidth / 2 + 100;
+                    // Calculate target based on current screen center
+                    const cx = window.innerWidth / 2;
+                    player.targetX = side === "left" ? cx - 100 : cx + 100;
+                    // Haptic feedback on movement
+                    triggerHaptic(15);
                 } else if (gameState === "gameover") {
                     hub.style.display = "block";
                     gameOverEl.style.display = "none";
@@ -1733,11 +1676,6 @@
                     s.style.display = "none";
                     m.style.display =
                         m.style.display === "block" ? "none" : "block";
-                    if (m.style.display === "block") {
-                        initAudio();
-                        unlockAudio();
-                        renderTrackList();
-                    }
                 });
             document
                 .getElementById("toggleShop")
@@ -1748,9 +1686,6 @@
                     s.style.display =
                         s.style.display === "block" ? "none" : "block";
                     if (s.style.display === "block") updateShopDisplay();
-                    // Also try to unlock audio on any menu interaction
-                    initAudio();
-                    unlockAudio();
                 });
             document
                 .getElementById("volumeSlider")
@@ -1770,20 +1705,40 @@
                     if (hapticEnabled) triggerHaptic(50);
                 });
 
-            ["mousedown", "touchstart"].forEach((evt) => {
-                document
-                    .getElementById("leftZone")
-                    .addEventListener(evt, (e) => {
-                        e.preventDefault();
-                        handleInput("left");
-                    });
-                document
-                    .getElementById("rightZone")
-                    .addEventListener(evt, (e) => {
-                        e.preventDefault();
-                        handleInput("right");
-                    });
-            });
+            // Mobile-first touch controls
+            const leftZone = document.getElementById("leftZone");
+            const rightZone = document.getElementById("rightZone");
+
+            function onLeftTap(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (e.type === "touchstart") { e.stopImmediatePropagation(); }
+                handleInput("left");
+                // Unlock audio on first interaction
+                if (audioCtx && audioCtx.state === "suspended") {
+                    audioCtx.resume().catch(() => {});
+                }
+            }
+
+            function onRightTap(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                if (e.type === "touchstart") { e.stopImmediatePropagation(); }
+                handleInput("right");
+                // Unlock audio on first interaction
+                if (audioCtx && audioCtx.state === "suspended") {
+                    audioCtx.resume().catch(() => {});
+                }
+            }
+
+            // Touch events with {passive: false} to allow preventDefault
+            leftZone.addEventListener("touchstart", onLeftTap, { passive: false, capture: true });
+            leftZone.addEventListener("touchend", (e) => { e.preventDefault(); }, { passive: false });
+            leftZone.addEventListener("mousedown", onLeftTap);
+
+            rightZone.addEventListener("touchstart", onRightTap, { passive: false, capture: true });
+            rightZone.addEventListener("touchend", (e) => { e.preventDefault(); }, { passive: false });
+            rightZone.addEventListener("mousedown", onRightTap);
 
             document.addEventListener("keydown", (e) => {
                 const key = e.key.toLowerCase();
@@ -2195,22 +2150,6 @@
 
             loadData();
             loop();
-            // Global first-interaction handler to unlock audio (browser requirement)
-            let interactionHandled = false;
-            function handleFirstInteraction() {
-                if (interactionHandled) return;
-                interactionHandled = true;
-                initAudio();
-                unlockAudio();
-                // Remove listeners after first use
-                document.removeEventListener("click", handleFirstInteraction);
-                document.removeEventListener("touchstart", handleFirstInteraction);
-                document.removeEventListener("keydown", handleFirstInteraction);
-            }
-            document.addEventListener("click", handleFirstInteraction, { once: true });
-            document.addEventListener("touchstart", handleFirstInteraction, { once: true });
-            document.addEventListener("keydown", handleFirstInteraction, { once: true });
-            
         </script>
     </body>
 </html>
